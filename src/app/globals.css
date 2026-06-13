@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --color-gold-50: #fbf8eb;
+  --color-gold-100: #f5eccd;
+  --color-gold-200: #ebd89b;
+  --color-gold-300: #dec063;
+  --color-gold-400: #d4af37;
+  --color-gold-500: #bc952b;
+  --color-gold-600: #9e761f;
+  --color-gold-700: #7e571c;
+  --color-gold-800: #66461c;
+  --color-gold-900: #553a1a;
+  --color-gold-950: #311f0c;
+
+  --color-luxury-bg: #090a0f;
+  --color-luxury-card: #12131a;
+  --color-luxury-border: #1f212d;
+  --color-luxury-hover: #181a24;
+  --color-luxury-accent: #c5a880;
+  --color-luxury-muted: #8e94a0;
+
+  --font-sans: var(--font-prompt), var(--font-outfit), var(--font-inter), system-ui, -apple-system, sans-serif;
+}
+
+/* Upscale base font size for better readability across all devices */
+html {
+  font-size: 112.5%; /* 1rem = 18px (up from 16px) */
+}
+
+:root {
+  --background: #090a0f;
+  --foreground: #eaecef;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Luxury visual headings enhancements */
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.02em;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Custom scrollbars for Dark Luxury theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #090a0f;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e202b;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #c5a880;
+}
