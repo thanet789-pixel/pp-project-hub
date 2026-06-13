@@ -33,6 +33,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'ok', message: 'Verification successful' });
     }
 
+    // Check if it is a dummy verification event from LINE Developers Console
+    const isVerifyRequest = events.some((event: any) => 
+      event.replyToken === '00000000000000000000000000000000' || 
+      event.replyToken === 'ffffffffffffffffffffffffffffffff' ||
+      event.source?.userId === 'U00000000000000000000000000000000'
+    );
+
+    if (isVerifyRequest) {
+      console.log('[LINE Webhook] Verification test request detected. Returning 200 OK immediately.');
+      return NextResponse.json({ status: 'ok', message: 'Verification successful' });
+    }
+
     for (const event of events) {
       if (event.type === 'message') {
         const { replyToken, message, source } = event;
