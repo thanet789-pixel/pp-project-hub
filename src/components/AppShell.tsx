@@ -191,10 +191,10 @@ export default function AppShell({ children }: AppShellProps) {
               </span>
             </div>
 
-            {/* AI Search Shortcut Button */}
+            {/* AI Search Shortcut Button - Hidden on Mobile to prevent clutter */}
             <Link 
               href="/ai-assistant"
-              className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-[#c5a880]/30 hover:border-[#c5a880]/60 bg-gradient-to-r from-[#d4af37]/10 to-transparent text-[#c5a880] text-sm font-semibold hover:shadow-[0_0_12px_rgba(212,175,55,0.15)] transition-all duration-200"
+              className="hidden md:flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-[#c5a880]/30 hover:border-[#c5a880]/60 bg-gradient-to-r from-[#d4af37]/10 to-transparent text-[#c5a880] text-sm font-semibold hover:shadow-[0_0_12px_rgba(212,175,55,0.15)] transition-all duration-200"
             >
               <Sparkles className="w-4 h-4" />
               <span>AI Search</span>
@@ -256,11 +256,36 @@ export default function AppShell({ children }: AppShellProps) {
           </div>
         </header>
 
-        {/* Content Area */}
-        <main className="flex-1 overflow-y-auto bg-[#090a0f] relative scrollbar-thin">
+        {/* Content Area - bottom padding added on mobile to prevent bottom nav overlay */}
+        <main className="flex-1 overflow-y-auto bg-[#090a0f] relative scrollbar-thin pb-20 lg:pb-0">
           {children}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0c0d12]/95 backdrop-blur-md border-t border-[#1f212d] z-40 flex items-center justify-around px-4 pb-safe shadow-lg">
+        {[
+          { href: '/', label: 'หน้าหลัก', icon: Home },
+          { href: '/projects', label: 'โปรเจกต์', icon: FolderOpen },
+          { href: '/calendar', label: 'ปฏิทิน', icon: Calendar },
+          { href: '/reports', label: 'รายงาน', icon: BarChart3 }
+        ].map((item) => {
+          const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${
+                isActive ? 'text-[#d4af37] font-semibold' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <Icon className="w-5.5 h-5.5" />
+              <span className="text-[11px] mt-1">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
 
       {/* Sidebar - Mobile drawer */}
       {isMobileMenuOpen && (

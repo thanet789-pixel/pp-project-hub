@@ -92,7 +92,10 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         
         {/* Card: Total Projects */}
-        <div className="p-5 rounded-2xl bg-[#12131a] border border-[#1f212d] hover:border-[#d4af37]/30 transition-all duration-300 group">
+        <Link 
+          href="/projects" 
+          className="p-5 rounded-2xl bg-[#12131a] border border-[#1f212d] hover:border-[#d4af37]/30 hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 group cursor-pointer block"
+        >
           <div className="flex items-center justify-between">
             <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 group-hover:scale-105 transition-transform duration-200">
               <Folder className="w-6 h-6" />
@@ -106,10 +109,13 @@ export default function Dashboard() {
             <p className="text-xs text-gray-400 font-medium">โปรเจกต์ทั้งหมด</p>
             <h3 className="text-2xl font-bold text-white mt-1">18 <span className="text-sm font-normal text-gray-400">โครงการ</span></h3>
           </div>
-        </div>
+        </Link>
 
         {/* Card: Active Tasks */}
-        <div className="p-5 rounded-2xl bg-[#12131a] border border-[#1f212d] hover:border-[#d4af37]/30 transition-all duration-300 group">
+        <Link 
+          href="/tasks" 
+          className="p-5 rounded-2xl bg-[#12131a] border border-[#1f212d] hover:border-[#d4af37]/30 hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 group cursor-pointer block"
+        >
           <div className="flex items-center justify-between">
             <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 group-hover:scale-105 transition-transform duration-200">
               <Activity className="w-6 h-6" />
@@ -123,10 +129,13 @@ export default function Dashboard() {
             <p className="text-xs text-gray-400 font-medium">งานที่กำลังดำเนินการ</p>
             <h3 className="text-2xl font-bold text-white mt-1">24 <span className="text-sm font-normal text-gray-400">งาน</span></h3>
           </div>
-        </div>
+        </Link>
 
         {/* Card: Delayed Tasks */}
-        <div className="p-5 rounded-2xl bg-[#12131a] border border-[#1f212d] hover:border-[#d4af37]/30 transition-all duration-300 group">
+        <Link 
+          href="/tasks" 
+          className="p-5 rounded-2xl bg-[#12131a] border border-[#1f212d] hover:border-[#d4af37]/30 hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 group cursor-pointer block"
+        >
           <div className="flex items-center justify-between">
             <div className="p-3 rounded-xl bg-red-500/10 text-red-400 group-hover:scale-105 transition-transform duration-200">
               <Clock className="w-6 h-6" />
@@ -140,10 +149,13 @@ export default function Dashboard() {
             <p className="text-xs text-gray-400 font-medium">งานที่ล่าช้า</p>
             <h3 className="text-2xl font-bold text-white mt-1">3 <span className="text-sm font-normal text-gray-400">งาน</span></h3>
           </div>
-        </div>
+        </Link>
 
         {/* Card: Completed Tasks */}
-        <div className="p-5 rounded-2xl bg-[#12131a] border border-[#1f212d] hover:border-[#d4af37]/30 transition-all duration-300 group">
+        <Link 
+          href="/tasks" 
+          className="p-5 rounded-2xl bg-[#12131a] border border-[#1f212d] hover:border-[#d4af37]/30 hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 group cursor-pointer block"
+        >
           <div className="flex items-center justify-between">
             <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 group-hover:scale-105 transition-transform duration-200">
               <CheckCircle2 className="w-6 h-6" />
@@ -157,7 +169,7 @@ export default function Dashboard() {
             <p className="text-xs text-gray-400 font-medium">งานที่เสร็จสิ้น</p>
             <h3 className="text-2xl font-bold text-white mt-1">56 <span className="text-sm font-normal text-gray-400">งาน</span></h3>
           </div>
-        </div>
+        </Link>
 
       </div>
 
