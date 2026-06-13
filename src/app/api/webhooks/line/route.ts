@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
 
 // Setup LINE config from env variables
 const channelSecret = process.env.LINE_CHANNEL_SECRET || '';
 const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN || '';
+
+// Create a Supabase Admin Client using the service role key if available, otherwise fallback to the anon key
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project-id.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
 // Verify LINE Signature to ensure security
 function verifySignature(body: string, signature: string): boolean {
@@ -71,24 +77,26 @@ export async function POST(req: NextRequest) {
           // 1. Download image from LINE Content Server
           const imageBuffer = await downloadLineContent(messageId);
 
-          // 2. Upload to Google Drive (Simulated fallback or actual upload depending on credentials)
-          let driveUrl = 'https://drive.google.com/drive/folders/placeholder';
-          if (process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
-            try {
-              driveUrl = await uploadToGoogleDrive(imageBuffer, `line_${messageId}.jpg`, groupId);
-            } catch (err) {
-              console.error('Error uploading to Google Drive:', err);
-            }
-          } else {
-            console.log('[Google Drive] Credentials missing. Image stored locally in memory.');
+          // 2. Upload to Supabase Storage
+          let photoUrl = '';
+          try {
+            photoUrl = await uploadToSupabaseStorage(imageBuffer, `line_${messageId}.jpg`, groupId);
+            console.log(`[Supabase Storage] Uploaded photo successfully: ${photoUrl}`);
+            
+            // 3. Save metadata to Database
+            savePhotoToDatabase(photoUrl, groupId).catch(dbErr => {
+              console.error('Failed to save photo metadata to DB:', dbErr);
+            });
+          } catch (err) {
+            console.error('Error uploading to Supabase Storage:', err);
           }
 
-          // 3. Reply confirmation to the installer group chat
+          // 4. Reply confirmation to the installer group chat
           if (replyToken) {
-            await sendLineReply(
-              replyToken, 
-              `PP Project Hub: 📸 ได้รับภาพถ่ายหน้างานแล้ว!\n\nจัดเก็บใน Google Drive ของโปรเจกต์เรียบร้อย\n📂 ลิงก์โฟลเดอร์: ${driveUrl}`
-            );
+            const replyMsg = photoUrl 
+              ? `PP Project Hub: 📸 ได้รับภาพถ่ายหน้างานแล้ว!\n\nจัดเก็บในระบบ Supabase Storage เรียบร้อย\n📂 ลิงก์รูปภาพ: ${photoUrl}`
+              : `PP Project Hub: 📸 ได้รับภาพถ่ายหน้างานแล้ว! แต่เกิดข้อผิดพลาดในการจัดเก็บคลาวด์`;
+            await sendLineReply(replyToken, replyMsg);
           }
         }
       }
@@ -144,68 +152,89 @@ async function sendLineReply(replyToken: string, text: string) {
   }
 }
 
-// Google Drive API file creation helper
-async function uploadToGoogleDrive(fileBuffer: Buffer, fileName: string, projectFolderKey: string): Promise<string> {
-  const { google } = require('googleapis');
-  
-  const auth = new google.auth.JWT({
-    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    scopes: ['https://www.googleapis.com/auth/drive']
-  });
+// Supabase Storage file creation helper
+async function uploadToSupabaseStorage(fileBuffer: Buffer, fileName: string, projectFolderKey: string): Promise<string> {
+  const bucketName = 'project-photos';
 
-  const drive = google.drive({ version: 'v3', auth });
-
-  const parentFolderId = process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID;
-
-  // Create or retrieve folder for this group/project
-  let folderId = parentFolderId;
-  if (parentFolderId) {
-    try {
-      const listRes = await drive.files.list({
-        q: `mimeType='application/vnd.google-apps.folder' and name='Project_${projectFolderKey}' and '${parentFolderId}' in parents and trashed=false`,
-        fields: 'files(id, name)',
-        spaces: 'drive'
+  // 1. Ensure bucket exists
+  try {
+    const { data: buckets } = await supabaseAdmin.storage.listBuckets();
+    if (!buckets?.some((b) => b.name === bucketName)) {
+      await supabaseAdmin.storage.createBucket(bucketName, {
+        public: true,
+        fileSizeLimit: 10485760 // 10MB
       });
-
-      const folders = listRes.data.files;
-      if (folders && folders.length > 0) {
-        folderId = folders[0].id;
-      } else {
-        // Create new folder inside parent folder
-        const folderMetadata = {
-          name: `Project_${projectFolderKey}`,
-          mimeType: 'application/vnd.google-apps.folder',
-          parents: [parentFolderId]
-        };
-        const folder = await drive.files.create({
-          resource: folderMetadata,
-          fields: 'id'
-        });
-        folderId = folder.data.id;
-      }
-    } catch (e) {
-      console.error('Error creating Google Drive project sub-folder:', e);
+      console.log(`[Supabase Storage] Created bucket "${bucketName}"`);
     }
+  } catch (err) {
+    console.error('[Supabase Storage] Failed to list or create bucket:', err);
   }
 
-  // Upload the file buffer
-  const { Readable } = require('stream');
-  const media = {
-    mimeType: 'image/jpeg',
-    body: Readable.from(fileBuffer)
-  };
+  // 2. Upload file
+  const filePath = `${projectFolderKey}/${fileName}`;
+  const { data, error } = await supabaseAdmin.storage
+    .from(bucketName)
+    .upload(filePath, fileBuffer, {
+      contentType: 'image/jpeg',
+      upsert: true
+    });
 
-  const fileMetadata = {
-    name: fileName,
-    parents: folderId ? [folderId] : []
-  };
+  if (error) {
+    throw error;
+  }
 
-  const file = await drive.files.create({
-    resource: fileMetadata,
-    media: media,
-    fields: 'id, webViewLink'
-  });
+  // 3. Get Public URL
+  const { data: { publicUrl } } = supabaseAdmin.storage
+    .from(bucketName)
+    .getPublicUrl(filePath);
 
-  return file.data.webViewLink || 'https://drive.google.com';
+  return publicUrl;
+}
+
+// Insert photo metadata into Supabase Database
+async function savePhotoToDatabase(publicUrl: string, projectFolderKey: string) {
+  try {
+    // 1. Find the project to link this photo to.
+    const { data: projects } = await supabaseAdmin
+      .from('projects')
+      .select('id')
+      .limit(1);
+
+    if (projects && projects.length > 0) {
+      const projectId = projects[0].id;
+      console.log(`[Supabase Database] Linking photo to project: ${projectId}`);
+
+      // 2. Insert into timelines table
+      const { data: timelineEvent, error: timelineError } = await supabaseAdmin
+        .from('timelines')
+        .insert({
+          project_id: projectId,
+          event_type: 'photo',
+          content: `📸 อัปโหลดรูปภาพรายงานความคืบหน้าจาก LINE (${projectFolderKey})`
+        })
+        .select()
+        .single();
+
+      if (timelineError) throw timelineError;
+
+      if (timelineEvent) {
+        // 3. Insert into photos table
+        const { error: photoError } = await supabaseAdmin
+          .from('photos')
+          .insert({
+            project_id: projectId,
+            timeline_id: timelineEvent.id,
+            url: publicUrl,
+            room_type: 'รายงานจาก LINE'
+          });
+
+        if (photoError) throw photoError;
+        console.log('[Supabase Database] Successfully inserted timeline event and photo record.');
+      }
+    } else {
+      console.log('[Supabase Database] No projects found to link this photo to.');
+    }
+  } catch (dbErr) {
+    console.error('[Supabase Database] Error saving photo record:', dbErr);
+  }
 }
