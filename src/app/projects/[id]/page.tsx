@@ -77,6 +77,11 @@ export default function ProjectDetail() {
   // Load timeline events and photos from Supabase
   const [supabaseEvents, setSupabaseEvents] = useState<TimelineEvent[]>([]);
   const [supabasePhotos, setSupabasePhotos] = useState<string[]>([]);
+  const [dbProjectId, setDbProjectId] = useState<string | null>(null);
+  const [supabaseTasks, setSupabaseTasks] = useState<Task[]>([]);
+  const [supabaseFiles, setSupabaseFiles] = useState<any[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [debugInfo, setDebugInfo] = useState<{
     url: string;
     resolvedProjectId: string | null;
@@ -195,6 +200,41 @@ export default function ProjectDetail() {
           return;
         }
 
+        if (active) {
+          setDbProjectId(dbProjectId);
+        }
+
+        // Fetch tasks from Supabase
+        const { data: dbTasks, error: tasksError } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('project_id', dbProjectId)
+          .order('created_at', { ascending: true });
+        
+        if (!tasksError && dbTasks && active) {
+          const mappedTasks: Task[] = dbTasks.map((t: any) => ({
+            id: t.id,
+            projectId: project.id,
+            title: t.title,
+            status: t.status as any,
+            priority: t.priority as any,
+            dueDate: t.due_date,
+            assignedTo: t.assigned_to || 'u5'
+          }));
+          setSupabaseTasks(mappedTasks);
+        }
+
+        // Fetch files from Supabase
+        const { data: dbFiles, error: filesError } = await supabase
+          .from('files')
+          .select('*')
+          .eq('project_id', dbProjectId)
+          .order('created_at', { ascending: false });
+        
+        if (!filesError && dbFiles && active) {
+          setSupabaseFiles(dbFiles);
+        }
+
         const { data: events, error: eventsError } = await supabase
           .from('timelines')
           .select('*, photos(*)')
@@ -311,13 +351,14 @@ export default function ProjectDetail() {
 
   useEffect(() => {
     // Recalculate progress based on checked tasks for demo completeness
-    const total = tasks.length;
+    const activeTasks = dbProjectId ? supabaseTasks : tasks;
+    const total = activeTasks.length;
     if (total === 0) return;
-    const completed = tasks.filter(t => t.status === 'done').length;
+    const completed = activeTasks.filter(t => t.status === 'done').length;
     const computed = Math.round((completed / total) * 100);
     // Mix it slightly with default project progress to make it realistic
     setProjectProgress(computed > 0 ? computed : project.progress);
-  }, [tasks]);
+  }, [tasks, supabaseTasks, dbProjectId]);
 
   const handlePostTimeline = (e: React.FormEvent) => {
     e.preventDefault();
@@ -354,10 +395,44 @@ export default function ProjectDetail() {
     }
   };
 
-  const handleAddTask = (e: React.FormEvent) => {
+  const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
 
+    if (dbProjectId) {
+      try {
+        const { data, error } = await supabase
+          .from('tasks')
+          .insert({
+            project_id: dbProjectId,
+            title: newTaskTitle,
+            status: 'todo',
+            priority: 'medium',
+            due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          })
+          .select()
+          .single();
+
+        if (!error && data) {
+          const newTask: Task = {
+            id: data.id,
+            projectId: project.id,
+            title: data.title,
+            status: data.status as any,
+            priority: data.priority as any,
+            dueDate: data.due_date,
+            assignedTo: data.assigned_to || 'u5'
+          };
+          setSupabaseTasks(prev => [...prev, newTask]);
+        } else {
+          console.error('Error adding task to Supabase:', error);
+        }
+      } catch (err) {
+        console.error('Task insertion failed:', err);
+      }
+    }
+
+    // Local mock fallback for local state compatibility
     const newTask: Task = {
       id: `t-new-${Date.now()}`,
       projectId: project.id,
@@ -367,21 +442,140 @@ export default function ProjectDetail() {
       dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       assignedTo: 'u5'
     };
-
-    setTasks([...tasks, newTask]);
+    setTasks(prev => [...prev, newTask]);
     setNewTaskTitle('');
     setIsAddingTask(false);
   };
 
-  const toggleTaskStatus = (taskId: string) => {
-    setTasks(prevTasks => 
-      prevTasks.map(t => {
-        if (t.id === taskId) {
-          return { ...t, status: t.status === 'done' ? 'todo' : 'done' };
+  const toggleTaskStatus = async (taskId: string) => {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(taskId);
+
+    if (isUuid && dbProjectId) {
+      const task = supabaseTasks.find(t => t.id === taskId);
+      if (task) {
+        const nextStatus = task.status === 'done' ? 'todo' : 'done';
+        
+        // Optimistic update
+        setSupabaseTasks(prev => 
+          prev.map(t => t.id === taskId ? { ...t, status: nextStatus } : t)
+        );
+
+        const { error } = await supabase
+          .from('tasks')
+          .update({ status: nextStatus })
+          .eq('id', taskId);
+
+        if (error) {
+          console.error('Error updating task in Supabase:', error);
+          // Rollback on error
+          setSupabaseTasks(prev => 
+            prev.map(t => t.id === taskId ? { ...t, status: task.status } : t)
+          );
         }
-        return t;
-      })
-    );
+      }
+    } else {
+      setTasks(prevTasks => 
+        prevTasks.map(t => {
+          if (t.id === taskId) {
+            return { ...t, status: t.status === 'done' ? 'todo' : 'done' };
+          }
+          return t;
+        })
+      );
+    }
+  };
+
+  const handleUploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !dbProjectId) return;
+
+    setIsUploading(true);
+    try {
+      const bucketName = 'project-files';
+      
+      // 1. Ensure bucket exists
+      try {
+        const { data: buckets } = await supabase.storage.listBuckets();
+        if (!buckets?.some((b) => b.name === bucketName)) {
+          await supabase.storage.createBucket(bucketName, {
+            public: true,
+            fileSizeLimit: 52428800 // 50MB
+          });
+          console.log(`[Supabase Storage] Created bucket "${bucketName}"`);
+        }
+      } catch (err) {
+        console.error('[Supabase Storage] Failed to list/create files bucket:', err);
+      }
+
+      // 2. Upload file
+      const fileExt = file.name.split('.').pop() || 'file';
+      const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const filePath = `${dbProjectId}/${Date.now()}_${cleanName}`;
+
+      const { data, error } = await supabase.storage
+        .from(bucketName)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (error) throw error;
+
+      // 3. Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(filePath);
+
+      // 4. Save metadata to DB
+      const { data: dbFile, error: dbErr } = await supabase
+        .from('files')
+        .insert({
+          project_id: dbProjectId,
+          name: file.name,
+          url: publicUrl,
+          file_type: fileExt,
+          size_bytes: file.size
+        })
+        .select()
+        .single();
+
+      if (dbErr) throw dbErr;
+
+      if (dbFile) {
+        setSupabaseFiles(prev => [dbFile, ...prev]);
+      }
+    } catch (err: any) {
+      console.error('File upload error:', err);
+      alert(`อัปโหลดล้มเหลว: ${err.message || String(err)}`);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (!bytes) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+
+  const formatThaiDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      const months = [
+        'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+        'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+      ];
+      const day = date.getDate();
+      const month = months[date.getMonth()];
+      const year = date.getFullYear() + 543;
+      return `${day} ${month} ${year}`;
+    } catch (e) {
+      return dateStr;
+    }
   };
 
   // Status mapping
@@ -779,18 +973,18 @@ export default function ProjectDetail() {
             <div className="p-6 rounded-2xl bg-[#12131a] border border-[#1f212d] space-y-4">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-bold text-white">รายการงานที่มอบหมาย</h3>
-                <span className="text-xs text-gray-400">งานทั้งหมด {tasks.length} รายการ</span>
+                <span className="text-xs text-gray-400">งานทั้งหมด {(dbProjectId ? supabaseTasks : tasks).length} รายการ</span>
               </div>
               <div className="space-y-2">
-                {tasks.map(t => (
+                {(dbProjectId ? supabaseTasks : tasks).map(t => (
                   <div key={t.id} className="p-4 rounded-xl bg-[#181a24] border border-[#1f212d] flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <input 
-                        type="checkbox" 
-                        checked={t.status === 'done'}
-                        onChange={() => toggleTaskStatus(t.id)}
-                        className="w-4 h-4 rounded border-[#1f212d] text-[#d4af37] focus:ring-[#d4af37] bg-transparent cursor-pointer"
-                      />
+                         type="checkbox" 
+                         checked={t.status === 'done'}
+                         onChange={() => toggleTaskStatus(t.id)}
+                         className="w-4 h-4 rounded border-[#1f212d] text-[#d4af37] focus:ring-[#d4af37] bg-transparent cursor-pointer"
+                       />
                       <div>
                         <span className={`text-xs font-semibold block ${t.status === 'done' ? 'line-through text-gray-500' : 'text-white'}`}>
                           {t.title}
@@ -814,25 +1008,61 @@ export default function ProjectDetail() {
           {/* TAB 3: SPEC & FILES TAB */}
           {activeTab === 'files' && (
             <div className="p-6 rounded-2xl bg-[#12131a] border border-[#1f212d] space-y-4">
-              <h3 className="text-sm font-bold text-white mb-2">แบบแปลนและเอกสาร BOQ</h3>
+              <div className="flex items-center justify-between border-b border-[#1f212d] pb-3 mb-2">
+                <h3 className="text-sm font-bold text-white">แบบแปลนและเอกสาร BOQ</h3>
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleUploadFile} 
+                    className="hidden" 
+                    accept=".pdf,.xlsx,.xls,.skp,.png,.jpg,.jpeg,.zip"
+                  />
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading || !dbProjectId}
+                    className="py-1.5 px-3.5 rounded-xl bg-[#c5a880] hover:bg-[#b0936b] text-black font-semibold text-[10px] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isUploading ? 'กำลังอัปโหลด...' : '+ อัปโหลดไฟล์แบบ/BOQ'}
+                  </button>
+                </div>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[
-                  { name: 'แบบเฟอร์นิเจอร์_ล่าสุด.pdf', size: '2.4 MB', date: '10 มิ.ย. 2567', type: 'pdf' },
-                  { name: 'BOQ_บ้านคุณเอก.xlsx', size: '1.1 MB', date: '9 มิ.ย. 2567', type: 'excel' },
-                  { name: 'แบบ 3D ห้องครัว.skp', size: '45 MB', date: '8 มิ.ย. 2567', type: 'sketchup' },
-                  { name: 'รายงานความคืบหน้า_สัปดาห์ที่2.pdf', size: '1.8 MB', date: '8 มิ.ย. 2567', type: 'pdf' }
-                ].map((f, idx) => (
-                  <div key={idx} className="p-4 rounded-xl bg-[#181a24] border border-[#1f212d] flex items-center justify-between">
+                {(dbProjectId ? supabaseFiles : [
+                  { id: '1', name: 'แบบเฟอร์นิเจอร์_ล่าสุด.pdf', size_bytes: 2516582, created_at: '2026-06-10T00:00:00Z', file_type: 'pdf', url: '#' },
+                  { id: '2', name: 'BOQ_บ้านคุณเอก.xlsx', size_bytes: 1153433, created_at: '2026-06-09T00:00:00Z', file_type: 'xlsx', url: '#' },
+                  { id: '3', name: 'แบบ 3D ห้องครัว.skp', size_bytes: 47185920, created_at: '2026-06-08T00:00:00Z', file_type: 'skp', url: '#' },
+                  { id: '4', name: 'รายงานความคืบหน้า_สัปดาห์ที่2.pdf', size_bytes: 1887436, created_at: '2026-06-08T00:00:00Z', file_type: 'pdf', url: '#' }
+                ]).map((f, idx) => (
+                  <div key={f.id || idx} className="p-4 rounded-xl bg-[#181a24] border border-[#1f212d] flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded bg-red-500/10 text-red-400">
                         <FileText className="w-5 h-5" />
                       </div>
                       <div>
                         <span className="text-xs font-bold text-white block truncate max-w-[150px]">{f.name}</span>
-                        <span className="text-[10px] text-gray-500 block">{f.size} • อัปโหลด {f.date}</span>
+                        <span className="text-[10px] text-gray-500 block">
+                          {formatFileSize(f.size_bytes)} • อัปโหลด {formatThaiDate(f.created_at)}
+                        </span>
                       </div>
                     </div>
-                    <button className="text-[10px] text-[#c5a880] hover:underline font-semibold">ดาวน์โหลด</button>
+                    {f.url && f.url !== '#' ? (
+                      <a 
+                        href={f.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-[10px] text-[#c5a880] hover:underline font-semibold"
+                      >
+                        ดาวน์โหลด
+                      </a>
+                    ) : (
+                      <button 
+                        onClick={() => alert('ไฟล์จำลองไม่สามารถดาวน์โหลดได้')} 
+                        className="text-[10px] text-gray-500 cursor-not-allowed font-semibold"
+                      >
+                        ดาวน์โหลด
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -964,7 +1194,7 @@ export default function ProjectDetail() {
             </div>
 
             <div className="space-y-3">
-              {tasks.slice(0, 3).map((task) => (
+              {(dbProjectId ? supabaseTasks : tasks).slice(0, 3).map((task) => (
                 <div key={task.id} className="flex items-start gap-2.5">
                   <input 
                     type="checkbox"
