@@ -284,49 +284,52 @@ export default function ProjectDetail() {
           networkCheck: netStatus
         });
 
-        channel = supabase
-          .channel(`project-detail-realtime-${dbProjectId}`)
-          .on(
-            'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'timelines', filter: `project_id=eq.${dbProjectId}` },
-            async (payload) => {
-              const { data: newEvt } = await supabase
-                .from('timelines')
-                .select('*, photos(*)')
-                .eq('id', payload.new.id)
-                .single();
+        if (active && dbProjectId) {
+          const uniqueChannelName = `project-detail-realtime-${dbProjectId}-${Math.random().toString(36).substring(2, 9)}`;
+          channel = supabase
+            .channel(uniqueChannelName)
+            .on(
+              'postgres_changes',
+              { event: 'INSERT', schema: 'public', table: 'timelines', filter: `project_id=eq.${dbProjectId}` },
+              async (payload) => {
+                const { data: newEvt } = await supabase
+                  .from('timelines')
+                  .select('*, photos(*)')
+                  .eq('id', payload.new.id)
+                  .single();
 
-              if (newEvt && active) {
-                const mapped: TimelineEvent = {
-                  id: newEvt.id,
-                  projectId: project.id,
-                  userName: 'ระบบ LINE Bot',
-                  userRole: 'installer',
-                  eventType: newEvt.event_type as any,
-                  content: newEvt.content,
-                  createdAt: newEvt.created_at,
-                  images: newEvt.photos?.map((p: any) => p.url) || []
-                };
-                setSupabaseEvents(prev => [mapped, ...prev]);
+                if (newEvt && active) {
+                  const mapped: TimelineEvent = {
+                    id: newEvt.id,
+                    projectId: project.id,
+                    userName: 'ระบบ LINE Bot',
+                    userRole: 'installer',
+                    eventType: newEvt.event_type as any,
+                    content: newEvt.content,
+                    createdAt: newEvt.created_at,
+                    images: newEvt.photos?.map((p: any) => p.url) || []
+                  };
+                  setSupabaseEvents(prev => [mapped, ...prev]);
 
-                if (newEvt.photos && newEvt.photos.length > 0) {
-                  const urls = newEvt.photos.map((p: any) => p.url);
-                  setSupabasePhotos(prev => [...urls, ...prev]);
-                  setDebugInfo(prevInfo => ({
-                    ...prevInfo,
-                    eventsCount: prevInfo.eventsCount + 1,
-                    photosCount: prevInfo.photosCount + urls.length
-                  }));
-                } else {
-                  setDebugInfo(prevInfo => ({
-                    ...prevInfo,
-                    eventsCount: prevInfo.eventsCount + 1
-                  }));
+                  if (newEvt.photos && newEvt.photos.length > 0) {
+                    const urls = newEvt.photos.map((p: any) => p.url);
+                    setSupabasePhotos(prev => [...urls, ...prev]);
+                    setDebugInfo(prevInfo => ({
+                      ...prevInfo,
+                      eventsCount: prevInfo.eventsCount + 1,
+                      photosCount: prevInfo.photosCount + urls.length
+                    }));
+                  } else {
+                    setDebugInfo(prevInfo => ({
+                      ...prevInfo,
+                      eventsCount: prevInfo.eventsCount + 1
+                    }));
+                  }
                 }
               }
-            }
-          )
-          .subscribe();
+            )
+            .subscribe();
+        }
 
       } catch (err: any) {
         console.error('Error loading data from Supabase:', err);
