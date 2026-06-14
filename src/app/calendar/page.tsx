@@ -31,6 +31,38 @@ export default function CalendarPage() {
   const [selectedType, setSelectedType] = useState<string>('all');
   const [activeView, setActiveView] = useState<'month' | 'week' | 'day' | 'agenda'>('month');
   
+  // Calendar active month/year (starting on June 2026 to align with mock events)
+  const [currentYear, setCurrentYear] = useState(2026);
+  const [currentMonth, setCurrentMonth] = useState(5); // June is index 5
+  
+  const thaiMonths = [
+    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+  ];
+  
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(prev => prev - 1);
+    } else {
+      setCurrentMonth(prev => prev - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(prev => prev + 1);
+    } else {
+      setCurrentMonth(prev => prev + 1);
+    }
+  };
+
+  const handleGoToToday = () => {
+    setCurrentYear(2026);
+    setCurrentMonth(5);
+  };
+  
   // Modals and Forms
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -87,31 +119,52 @@ export default function CalendarPage() {
     }
   };
 
-  // Generate calendar days for June 2026
-  // June 2026 starts on a Monday (1st) and ends on a Tuesday (30th)
-  // To display full grid, we add padding at start (May 25-31: 7 days) and end (July 1-5: 5 days)
-  const generateJuneGrid = () => {
+  // Generate calendar days dynamically based on active month and year
+  const generateGrid = (year: number, month: number) => {
     const gridDays = [];
     
-    // May filler days (25 to 31)
-    for (let d = 27; d <= 31; d++) {
-      gridDays.push({ dateStr: `2026-05-${d}`, dayNum: d, isCurrentMonth: false });
+    // Day of the week for the 1st of the month (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+    const firstDayVal = new Date(year, month, 1).getDay();
+    
+    // Shift so Monday is 0, Sunday is 6
+    const startDayOfWeek = (firstDayVal + 6) % 7;
+    
+    // Get last day of previous month
+    const prevMonthDate = new Date(year, month, 0);
+    const lastDayOfPrevMonth = prevMonthDate.getDate();
+    const prevMonth = prevMonthDate.getMonth();
+    const prevYear = prevMonthDate.getFullYear();
+    
+    // Previous month filler days
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const day = lastDayOfPrevMonth - i;
+      const dateStr = `${prevYear}-${(prevMonth + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+      gridDays.push({ dateStr, dayNum: day, isCurrentMonth: false });
     }
-    // June days (1 to 30)
-    for (let d = 1; d <= 30; d++) {
-      const dateStr = `2026-06-${d.toString().padStart(2, '0')}`;
+    
+    // Current month days
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
       gridDays.push({ dateStr, dayNum: d, isCurrentMonth: true });
     }
-    // July filler days (1 to 5)
-    for (let d = 1; d <= 5; d++) {
-      const dateStr = `2026-07-${d.toString().padStart(2, '0')}`;
+    
+    // Next month filler days (fill up to 42 days grid)
+    const totalFilled = gridDays.length;
+    const remainingDays = 42 - totalFilled;
+    const nextMonthDate = new Date(year, month + 1, 1);
+    const nextMonth = nextMonthDate.getMonth();
+    const nextYear = nextMonthDate.getFullYear();
+    
+    for (let d = 1; d <= remainingDays; d++) {
+      const dateStr = `${nextYear}-${(nextMonth + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
       gridDays.push({ dateStr, dayNum: d, isCurrentMonth: false });
     }
     
     return gridDays;
   };
 
-  const calendarDays = generateJuneGrid();
+  const calendarDays = generateGrid(currentYear, currentMonth);
 
   // Filter events based on active category checkboxes
   const filteredEvents = events.filter(evt => {
@@ -171,18 +224,27 @@ export default function CalendarPage() {
           {/* Sub header controls */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#12131a] p-4 rounded-xl border border-[#1f212d]">
             <div className="flex items-center gap-3">
-              <button className="px-3 py-1.5 rounded-lg bg-[#181a24] hover:bg-white/5 border border-[#1f212d] text-xs font-semibold text-white">
+              <button 
+                onClick={handleGoToToday}
+                className="px-3 py-1.5 rounded-lg bg-[#181a24] hover:bg-white/5 border border-[#1f212d] text-xs font-semibold text-white"
+              >
                 วันนี้
               </button>
               <div className="flex items-center gap-1">
-                <button className="p-1.5 rounded bg-[#181a24] hover:bg-white/5 text-gray-400 hover:text-white">
+                <button 
+                  onClick={handlePrevMonth}
+                  className="p-1.5 rounded bg-[#181a24] hover:bg-white/5 text-gray-400 hover:text-white"
+                >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-                <button className="p-1.5 rounded bg-[#181a24] hover:bg-white/5 text-gray-400 hover:text-white">
+                <button 
+                  onClick={handleNextMonth}
+                  className="p-1.5 rounded bg-[#181a24] hover:bg-white/5 text-gray-400 hover:text-white"
+                >
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
-              <h3 className="text-sm font-bold text-white tracking-wide">มิถุนายน 2569</h3>
+              <h3 className="text-sm font-bold text-white tracking-wide">{thaiMonths[currentMonth]} {currentYear + 543}</h3>
             </div>
 
             {/* View switcher */}
@@ -248,7 +310,7 @@ export default function CalendarPage() {
             </div>
 
             {/* Days grid */}
-            <div className="grid grid-cols-7 grid-rows-5 auto-rows-[100px] border-[#1f212d]">
+            <div className="grid grid-cols-7 auto-rows-[100px] border-[#1f212d]">
               {calendarDays.map((day, idx) => {
                 const dayEvents = filteredEvents.filter(e => e.date === day.dateStr);
                 const isToday = day.dateStr === '2026-06-13'; // Mock current date
