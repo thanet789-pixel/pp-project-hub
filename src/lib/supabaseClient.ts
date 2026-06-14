@@ -4,8 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 // This file sets up the standard Supabase client.
 // It falls back to a dummy client for frontend prototyping so it does not block execution if credentials are empty.
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project-id.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+const supabaseUrl = 'https://cgswxfwxgojwhqqmlyol.supabase.co';
+const supabaseAnonKey = 'sb_publishable_no0jl_RkjPe5jPIwhdfjmw_yJPTHoMb';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 

@@ -159,7 +159,64 @@ export async function POST(req: NextRequest) {
             }
             
             else {
-              await sendLineReply(replyToken, `PP Project Hub: ได้รับข้อความรายงานความคืบหน้าเรียบร้อยแล้ว (${text.substring(0, 20)}...)`);
+              // Find project details to link this comment
+              let projectId = null;
+              let projectName = '';
+              try {
+                let { data: matchedProjects } = await supabaseAdmin
+                  .from('projects')
+                  .select('id, name')
+                  .eq('line_group_id', groupId)
+                  .eq('is_line_active', true)
+                  .limit(1);
+
+                if (!matchedProjects || matchedProjects.length === 0) {
+                  const { data: anyMatched } = await supabaseAdmin
+                    .from('projects')
+                    .select('id, name')
+                    .eq('line_group_id', groupId)
+                    .limit(1);
+                  matchedProjects = anyMatched;
+                }
+
+                if (matchedProjects && matchedProjects.length > 0) {
+                  projectId = matchedProjects[0].id;
+                  projectName = matchedProjects[0].name;
+                } else {
+                  const { data: fallbackProjects } = await supabaseAdmin
+                    .from('projects')
+                    .select('id, name')
+                    .limit(1);
+                  if (fallbackProjects && fallbackProjects.length > 0) {
+                    projectId = fallbackProjects[0].id;
+                    projectName = fallbackProjects[0].name;
+                  }
+                }
+              } catch (dbErr) {
+                console.error('[LINE Webhook] Error querying project for text timeline:', dbErr);
+              }
+
+              // Insert message as a comment into timelines table
+              if (projectId) {
+                try {
+                  const { error: timelineError } = await supabaseAdmin
+                    .from('timelines')
+                    .insert({
+                      project_id: projectId,
+                      event_type: 'comment',
+                      content: `💬 รายงานข้อความจาก LINE: "${text}"`
+                    });
+                  if (timelineError) throw timelineError;
+                  console.log('[Supabase Database] Successfully inserted timeline event for text.');
+                } catch (dbErr) {
+                  console.error('[Supabase Database] Error saving text timeline event:', dbErr);
+                }
+              }
+
+              const replyText = projectName 
+                ? `PP Project Hub: 📝 บันทึกข้อความลงไทม์ไลน์โครงการ "${projectName}" เรียบร้อยแล้วครับ!` 
+                : `PP Project Hub: 📝 บันทึกข้อความรายงานความคืบหน้าเรียบร้อยแล้ว (${text.substring(0, 20)}...)`;
+              await sendLineReply(replyToken, replyText);
             }
           }
         } 

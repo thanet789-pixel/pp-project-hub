@@ -77,39 +77,123 @@ export default function ProjectDetail() {
   // Load timeline events and photos from Supabase
   const [supabaseEvents, setSupabaseEvents] = useState<TimelineEvent[]>([]);
   const [supabasePhotos, setSupabasePhotos] = useState<string[]>([]);
+  const [debugInfo, setDebugInfo] = useState<{
+    url: string;
+    resolvedProjectId: string | null;
+    matchedProjectName: string | null;
+    eventsCount: number;
+    photosCount: number;
+    error: string | null;
+    dbProjects: any[];
+    networkCheck: string;
+  }>({
+    url: '',
+    resolvedProjectId: null,
+    matchedProjectName: null,
+    eventsCount: 0,
+    photosCount: 0,
+    error: null,
+    dbProjects: [],
+    networkCheck: 'Checking network...'
+  });
+
 
   useEffect(() => {
     let active = true;
     let channel: any = null;
 
     async function loadSupabaseData() {
+      let netStatus = 'Testing outbound internet (GitHub)...';
+      try {
+        const testRes = await fetch('https://api.github.com/zen', { mode: 'cors' });
+        if (testRes.ok) {
+          netStatus = 'Outbound internet connected successfully (GitHub Zen API OK)';
+        } else {
+          netStatus = `Outbound internet returned status: HTTP ${testRes.status}`;
+        }
+      } catch (err: any) {
+        netStatus = `Outbound internet BLOCKED/FAILED: ${err?.message || String(err)}`;
+      }
+
       try {
         let dbProjectId = null;
+        let matchedProjName = null;
         
-        if (project.lineGroupId) {
+        // Fetch all projects in DB for debugging info
+        const { data: dbProjs, error: projsErr } = await supabase
+          .from('projects')
+          .select('id, name, line_group_id, is_line_active');
+
+        const supabaseUrlConfig = 'https://cgswxfwxgojwhqqmlyol.supabase.co';
+
+        if (projsErr) {
+          setDebugInfo({
+            url: supabaseUrlConfig,
+            resolvedProjectId: null,
+            matchedProjectName: null,
+            eventsCount: 0,
+            photosCount: 0,
+            error: `Supabase API Error: ${projsErr.message} (${projsErr.code || 'No code'}). Please check if your NEXT_PUBLIC_SUPABASE_ANON_KEY is correct and complete.`,
+            dbProjects: [],
+            networkCheck: netStatus
+          });
+          return;
+        }
+        
+        // 1. Try matching by project name (most robust since mock names match DB names)
+        if (project.name) {
+          const { data: nameMatched } = await supabase
+            .from('projects')
+            .select('id, name')
+            .ilike('name', `%${project.name}%`)
+            .limit(1);
+          
+          if (nameMatched && nameMatched.length > 0) {
+            dbProjectId = nameMatched[0].id;
+            matchedProjName = nameMatched[0].name;
+          }
+        }
+
+        // 2. Fallback to matching by lineGroupId
+        if (!dbProjectId && project.lineGroupId) {
           const { data: matched } = await supabase
             .from('projects')
-            .select('id')
+            .select('id, name')
             .eq('line_group_id', project.lineGroupId)
             .limit(1);
           
           if (matched && matched.length > 0) {
             dbProjectId = matched[0].id;
+            matchedProjName = matched[0].name;
           }
         }
 
+        // 3. Ultimate fallback to the first project in the database
         if (!dbProjectId) {
           const { data: fallback } = await supabase
             .from('projects')
-            .select('id')
+            .select('id, name')
             .limit(1);
           
           if (fallback && fallback.length > 0) {
             dbProjectId = fallback[0].id;
+            matchedProjName = fallback[0].name;
           }
         }
 
-        if (!dbProjectId) return;
+        if (!dbProjectId) {
+          setDebugInfo({
+            url: supabaseUrlConfig,
+            resolvedProjectId: null,
+            matchedProjectName: null,
+            eventsCount: 0,
+            photosCount: 0,
+            error: 'No projects found in Supabase database.',
+            dbProjects: dbProjs || [],
+            networkCheck: netStatus
+          });
+          return;
+        }
 
         const { data: events, error: eventsError } = await supabase
           .from('timelines')
@@ -119,6 +203,7 @@ export default function ProjectDetail() {
 
         if (eventsError) throw eventsError;
 
+        let mappedCount = 0;
         if (events && active) {
           const mapped: TimelineEvent[] = events.map((evt: any) => ({
             id: evt.id,
@@ -131,6 +216,7 @@ export default function ProjectDetail() {
             images: evt.photos?.map((p: any) => p.url) || []
           }));
           setSupabaseEvents(mapped);
+          mappedCount = mapped.length;
         }
 
         const { data: photos, error: photosError } = await supabase
@@ -141,9 +227,22 @@ export default function ProjectDetail() {
 
         if (photosError) throw photosError;
 
+        let photosCount = 0;
         if (photos && active) {
           setSupabasePhotos(photos.map((p: any) => p.url));
+          photosCount = photos.length;
         }
+
+        setDebugInfo({
+          url: supabaseUrlConfig,
+          resolvedProjectId: dbProjectId,
+          matchedProjectName: matchedProjName,
+          eventsCount: mappedCount,
+          photosCount: photosCount,
+          error: null,
+          dbProjects: dbProjs || [],
+          networkCheck: netStatus
+        });
 
         channel = supabase
           .channel(`project-detail-realtime-${dbProjectId}`)
@@ -173,14 +272,30 @@ export default function ProjectDetail() {
                 if (newEvt.photos && newEvt.photos.length > 0) {
                   const urls = newEvt.photos.map((p: any) => p.url);
                   setSupabasePhotos(prev => [...urls, ...prev]);
+                  setDebugInfo(prevInfo => ({
+                    ...prevInfo,
+                    eventsCount: prevInfo.eventsCount + 1,
+                    photosCount: prevInfo.photosCount + urls.length
+                  }));
+                } else {
+                  setDebugInfo(prevInfo => ({
+                    ...prevInfo,
+                    eventsCount: prevInfo.eventsCount + 1
+                  }));
                 }
               }
             }
           )
           .subscribe();
 
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error loading data from Supabase:', err);
+        setDebugInfo(prev => ({
+          ...prev,
+          url: 'https://cgswxfwxgojwhqqmlyol.supabase.co',
+          error: err?.message || String(err),
+          networkCheck: netStatus
+        }));
       }
     }
 
@@ -929,6 +1044,49 @@ export default function ProjectDetail() {
           </div>
         </div>
       )}
+
+      {/* DB Connection Debug Panel */}
+      <div className="mt-8 p-5 rounded-2xl bg-[#12131a] border border-[#1f212d] text-xs space-y-3">
+        <div className="flex items-center justify-between text-gray-400 font-bold border-b border-[#1f212d] pb-2">
+          <span className="flex items-center gap-1.5 text-white">🛠️ Supabase Connection Debug Panel</span>
+          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${debugInfo.error ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+            {debugInfo.error ? '⚠️ Error / Blocked' : '✅ Active & Connected'}
+          </span>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px] text-gray-300">
+          <div className="space-y-1.5">
+            <div><span className="text-gray-500">Supabase Endpoint URL:</span> <code className="text-[#c5a880] bg-[#14161e] px-1.5 py-0.5 rounded font-mono break-all">{debugInfo.url}</code></div>
+            <div><span className="text-gray-500">Resolved Project ID:</span> <code className="text-[#c5a880] bg-[#14161e] px-1.5 py-0.5 rounded font-mono">{debugInfo.resolvedProjectId || 'None / Empty'}</code></div>
+            <div><span className="text-gray-500">Matched Project Name:</span> <span className="font-semibold text-white">{debugInfo.matchedProjectName || 'None / Empty'}</span></div>
+          </div>
+          <div className="space-y-1.5">
+            <div><span className="text-gray-500">Timeline Events Loaded:</span> <span className="font-bold text-white bg-[#14161e] px-2 py-0.5 rounded">{debugInfo.eventsCount}</span></div>
+            <div><span className="text-gray-500">Photos (Real-time DB) Loaded:</span> <span className="font-bold text-[#d4af37] bg-[#14161e] px-2 py-0.5 rounded">{debugInfo.photosCount}</span></div>
+            <div><span className="text-gray-500">Outbound Connection Test:</span> <span className={`font-semibold ${debugInfo.networkCheck.includes('BLOCKED') ? 'text-red-400' : 'text-emerald-400'}`}>{debugInfo.networkCheck}</span></div>
+            {debugInfo.error && (
+              <div className="text-red-400 font-semibold mt-1 p-2 rounded bg-red-500/5 border border-red-500/10">
+                Error Log: {debugInfo.error}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {debugInfo.dbProjects && debugInfo.dbProjects.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-[#1f212d] text-[10px]">
+            <div className="font-bold text-gray-400 mb-1.5">Projects in Database:</div>
+            <div className="space-y-1.5 max-h-28 overflow-y-auto pr-1">
+              {debugInfo.dbProjects.map((p, idx) => (
+                <div key={idx} className="flex flex-col sm:flex-row sm:justify-between font-mono bg-[#14161e] p-2 rounded border border-[#1f212d] gap-1">
+                  <span className="text-white">Name: "{p.name}"</span>
+                  <span className="text-gray-500">ID: {p.id}</span>
+                  <span className="text-[#c5a880]">Line Group ID: "{p.line_group_id || 'null'}"</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
     </div>
   );
