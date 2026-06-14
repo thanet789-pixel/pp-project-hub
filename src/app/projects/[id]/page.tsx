@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { mockProjects, mockTasks, mockTimelineEvents, mockUsers } from '@/lib/mockData';
 import { Project, Task, TimelineEvent, ProjectStatus } from '@/lib/types';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function ProjectDetail() {
   const router = useRouter();
@@ -72,6 +73,126 @@ export default function ProjectDetail() {
       setShowSaveToast(false);
     }, 3000);
   };
+
+  // Load timeline events and photos from Supabase
+  const [supabaseEvents, setSupabaseEvents] = useState<TimelineEvent[]>([]);
+  const [supabasePhotos, setSupabasePhotos] = useState<string[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    let channel: any = null;
+
+    async function loadSupabaseData() {
+      try {
+        let dbProjectId = null;
+        
+        if (project.lineGroupId) {
+          const { data: matched } = await supabase
+            .from('projects')
+            .select('id')
+            .eq('line_group_id', project.lineGroupId)
+            .limit(1);
+          
+          if (matched && matched.length > 0) {
+            dbProjectId = matched[0].id;
+          }
+        }
+
+        if (!dbProjectId) {
+          const { data: fallback } = await supabase
+            .from('projects')
+            .select('id')
+            .limit(1);
+          
+          if (fallback && fallback.length > 0) {
+            dbProjectId = fallback[0].id;
+          }
+        }
+
+        if (!dbProjectId) return;
+
+        const { data: events, error: eventsError } = await supabase
+          .from('timelines')
+          .select('*, photos(*)')
+          .eq('project_id', dbProjectId)
+          .order('created_at', { ascending: false });
+
+        if (eventsError) throw eventsError;
+
+        if (events && active) {
+          const mapped: TimelineEvent[] = events.map((evt: any) => ({
+            id: evt.id,
+            projectId: project.id,
+            userName: evt.user_id ? 'ช่างหน้างาน' : 'ระบบ LINE Bot',
+            userRole: 'installer',
+            eventType: evt.event_type as any,
+            content: evt.content,
+            createdAt: evt.created_at,
+            images: evt.photos?.map((p: any) => p.url) || []
+          }));
+          setSupabaseEvents(mapped);
+        }
+
+        const { data: photos, error: photosError } = await supabase
+          .from('photos')
+          .select('url')
+          .eq('project_id', dbProjectId)
+          .order('created_at', { ascending: false });
+
+        if (photosError) throw photosError;
+
+        if (photos && active) {
+          setSupabasePhotos(photos.map((p: any) => p.url));
+        }
+
+        channel = supabase
+          .channel(`project-detail-realtime-${dbProjectId}`)
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'timelines', filter: `project_id=eq.${dbProjectId}` },
+            async (payload) => {
+              const { data: newEvt } = await supabase
+                .from('timelines')
+                .select('*, photos(*)')
+                .eq('id', payload.new.id)
+                .single();
+
+              if (newEvt && active) {
+                const mapped: TimelineEvent = {
+                  id: newEvt.id,
+                  projectId: project.id,
+                  userName: 'ระบบ LINE Bot',
+                  userRole: 'installer',
+                  eventType: newEvt.event_type as any,
+                  content: newEvt.content,
+                  createdAt: newEvt.created_at,
+                  images: newEvt.photos?.map((p: any) => p.url) || []
+                };
+                setSupabaseEvents(prev => [mapped, ...prev]);
+
+                if (newEvt.photos && newEvt.photos.length > 0) {
+                  const urls = newEvt.photos.map((p: any) => p.url);
+                  setSupabasePhotos(prev => [...urls, ...prev]);
+                }
+              }
+            }
+          )
+          .subscribe();
+
+      } catch (err) {
+        console.error('Error loading data from Supabase:', err);
+      }
+    }
+
+    loadSupabaseData();
+
+    return () => {
+      active = false;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [project.id, project.lineGroupId, showSaveToast]);
 
   useEffect(() => {
     // Recalculate progress based on checked tasks for demo completeness
@@ -459,7 +580,7 @@ export default function ProjectDetail() {
                 <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">12 มิ.ย. 2567</div>
                 
                 <div className="space-y-4">
-                  {timelineEvents.map((evt) => {
+                  {[...supabaseEvents, ...timelineEvents].map((evt) => {
                     if (evt.eventType === 'ai_summary') {
                       return (
                         <div key={evt.id} className="p-4 rounded-xl bg-gradient-to-r from-[#d4af37]/10 via-[#d4af37]/5 to-transparent border border-[#d4af37]/20 flex items-start gap-3 animate-in fade-in duration-300">
@@ -608,15 +729,27 @@ export default function ProjectDetail() {
             <div className="p-6 rounded-2xl bg-[#12131a] border border-[#1f212d] space-y-4">
               <h3 className="text-sm font-bold text-white">อัลบั้มรูปถ่ายหน้างาน (Vision AI Analyzed)</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {[1, 2, 3, 4].map((n) => (
-                  <div key={n} className="rounded-xl overflow-hidden bg-gray-800 border border-gray-700 relative group">
-                    <img src="/images/kitchen.png" className="w-full h-40 object-cover" alt="site render" />
-                    <div className="absolute inset-x-0 bottom-0 bg-black/85 p-2 border-t border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="text-[9px] font-bold text-white">ห้อง: Built-in ครัว</div>
-                      <div className="text-[8px] text-emerald-400 mt-0.5">ผลวิเคราะห์: ติดตั้งแล้ว 85% (ไม่พบจุดบกพร่อง)</div>
+                {supabasePhotos.length > 0 ? (
+                  supabasePhotos.map((photoUrl, idx) => (
+                    <div key={idx} className="rounded-xl overflow-hidden bg-gray-800 border border-gray-700 relative group aspect-video">
+                      <img src={photoUrl} className="w-full h-full object-cover" alt="site upload" />
+                      <div className="absolute inset-x-0 bottom-0 bg-black/85 p-2 border-t border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="text-[9px] font-bold text-white">ห้อง: รายงานจาก LINE</div>
+                        <div className="text-[8px] text-emerald-400 mt-0.5">สถานะ: บันทึกข้อมูลสำเร็จ</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  [1, 2, 3, 4].map((n) => (
+                    <div key={n} className="rounded-xl overflow-hidden bg-gray-800 border border-gray-700 relative group aspect-video">
+                      <img src="/images/kitchen.png" className="w-full h-full object-cover" alt="site render" />
+                      <div className="absolute inset-x-0 bottom-0 bg-black/85 p-2 border-t border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="text-[9px] font-bold text-white">ห้อง: Built-in ครัว (Mock)</div>
+                        <div className="text-[8px] text-emerald-400 mt-0.5">ผลวิเคราะห์: ติดตั้งแล้ว 85% (ไม่พบจุดบกพร่อง)</div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
