@@ -61,12 +61,18 @@ export async function POST(req: NextRequest) {
         const groupId = source.groupId || source.roomId || 'personal_chat';
 
         if (messageType === 'text') {
-          const text = message.text;
+          const text = message.text.trim();
           console.log(`[LINE Webhook] Text received from ${groupId}: "${text}"`);
           
           // Reply confirmation to LINE using fetch to LINE API
           if (replyToken) {
-            await sendLineReply(replyToken, `PP Project Hub: ได้รับข้อความรายงานความคืบหน้าเรียบร้อยแล้ว (${text.substring(0, 20)}...)`);
+            const lowerText = text.toLowerCase();
+            if (lowerText === '#id' || lowerText === '@check' || lowerText === 'id' || lowerText === 'check') {
+              const replyMsg = `PP Project Hub 🔑 ID Info:\n\n• Type: ${source.type}\n• ID: ${groupId}\n\nคัดลอกรหัส ID ด้านบนไปกรอกในช่องตั้งค่า LINE Group ID ของโปรเจกต์บนเว็บเบราว์เซอร์ได้เลยครับ`;
+              await sendLineReply(replyToken, replyMsg);
+            } else {
+              await sendLineReply(replyToken, `PP Project Hub: ได้รับข้อความรายงานความคืบหน้าเรียบร้อยแล้ว (${text.substring(0, 20)}...)`);
+            }
           }
         } 
         
