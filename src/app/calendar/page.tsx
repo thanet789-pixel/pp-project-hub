@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 
@@ -14,6 +14,7 @@ import {
   X
 } from 'lucide-react';
 import { mockCalendarEvents } from '@/lib/mockData';
+import { supabase } from '@/lib/supabaseClient';
 
 type EventType = 'customer' | 'install' | 'manufacture' | 'delivery' | 'inspection' | 'other';
 
@@ -27,10 +28,11 @@ interface CalendarEvent {
 }
 
 export default function CalendarPage() {
-  const [events, setEvents] = useState<CalendarEvent[]>(mockCalendarEvents);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [activeView, setActiveView] = useState<'month' | 'week' | 'day' | 'agenda'>('month');
-  
+  const [loading, setLoading] = useState(true);
+
   // Calendar active month/year (starting on June 2026 to align with mock events)
   const [currentYear, setCurrentYear] = useState(2026);
   const [currentMonth, setCurrentMonth] = useState(5); // June is index 5
@@ -49,7 +51,19 @@ export default function CalendarPage() {
   const [newType, setNewType] = useState<EventType>('install');
   const [newDetails, setNewDetails] = useState('');
 
+  // Checklist states
+  const [teamFilters, setTeamFilters] = useState({
+    all: true,
+    customer: true,
+    install: true,
+    delivery: true,
+    manufacture: true,
+    inspection: true,
+    other: true
+  });
+
   // Dynamically set today's date and active month on component mount
+  // Also fetch appointments from Supabase
   useEffect(() => {
     const today = new Date();
     const y = today.getFullYear();
@@ -60,6 +74,36 @@ export default function CalendarPage() {
     setNewDate(formattedDate);
     setCurrentYear(y);
     setCurrentMonth(today.getMonth());
+
+    async function loadAppointments() {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('appointments')
+          .select('*')
+          .order('appointment_date', { ascending: true });
+
+        if (data && data.length > 0) {
+          const mapped: CalendarEvent[] = data.map((item: any) => ({
+            id: item.id,
+            date: item.appointment_date,
+            title: item.title,
+            type: item.event_type,
+            time: item.appointment_time,
+            details: item.details || ''
+          }));
+          setEvents(mapped);
+        } else {
+          setEvents(mockCalendarEvents);
+        }
+      } catch (err) {
+        console.error('Error fetching appointments:', err);
+        setEvents(mockCalendarEvents);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadAppointments();
   }, []);
   
   const handlePrevMonth = () => {
@@ -86,17 +130,6 @@ export default function CalendarPage() {
     setCurrentMonth(today.getMonth());
   };
 
-  // Checklist states
-  const [teamFilters, setTeamFilters] = useState({
-    all: true,
-    customer: true,
-    install: true,
-    delivery: true,
-    manufacture: true,
-    inspection: true,
-    other: true
-  });
-
   const handleToggleFilter = (key: keyof typeof teamFilters) => {
     if (key === 'all') {
       const nextVal = !teamFilters.all;
@@ -111,7 +144,6 @@ export default function CalendarPage() {
       });
     } else {
       const updated = { ...teamFilters, [key]: !teamFilters[key] };
-      // Check if all sub-filters are true or false to update 'all'
       const allSelected = updated.customer && updated.install && updated.delivery && updated.manufacture && updated.inspection && updated.other;
       setTeamFilters({ ...updated, all: allSelected });
     }
@@ -137,14 +169,8 @@ export default function CalendarPage() {
   // Generate calendar days dynamically based on active month and year
   const generateGrid = (year: number, month: number) => {
     const gridDays = [];
-    
-    // Day of the week for the 1st of the month (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
     const firstDayVal = new Date(year, month, 1).getDay();
-    
-    // Shift so Monday is 0, Sunday is 6
     const startDayOfWeek = (firstDayVal + 6) % 7;
-    
-    // Get last day of previous month
     const prevMonthDate = new Date(year, month, 0);
     const lastDayOfPrevMonth = prevMonthDate.getDate();
     const prevMonth = prevMonthDate.getMonth();
@@ -194,20 +220,69 @@ export default function CalendarPage() {
     return true;
   });
 
-  const handleAddAppointment = (e: React.FormEvent) => {
+  const handleAddAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
-    const newEvent: CalendarEvent = {
-      id: `evt-${Date.now()}`,
-      date: newDate,
-      title: newTitle,
-      type: newType,
-      time: newTime,
-      details: newDetails
-    };
+    let createdEvent: CalendarEvent | null = null;
+    
+    try {
+      // Find matching project
+      let resolvedProjectId: string | null = null;
+      const { data: projs } = await supabase.from('projects').select('id, name');
+      
+      if (projs && projs.length > 0) {
+        const matched = projs.find(p => newDetails.toLowerCase().includes(p.name.toLowerCase()));
+        if (matched) {
+          resolvedProjectId = matched.id;
+        } else {
+          resolvedProjectId = projs[0].id;
+        }
+      }
 
-    setEvents([...events, newEvent]);
+      if (resolvedProjectId) {
+        const { data, error } = await supabase
+          .from('appointments')
+          .insert({
+            project_id: resolvedProjectId,
+            title: newTitle,
+            event_type: newType,
+            appointment_date: newDate,
+            appointment_time: newTime,
+            details: newDetails
+          })
+          .select()
+          .single();
+
+        if (!error && data) {
+          createdEvent = {
+            id: data.id,
+            date: data.appointment_date,
+            title: data.title,
+            type: data.event_type,
+            time: data.appointment_time,
+            details: data.details || ''
+          };
+        } else {
+          console.error('Error inserting appointment into Supabase:', error);
+        }
+      }
+    } catch (err) {
+      console.error('Supabase appointment insertion failed:', err);
+    }
+
+    if (!createdEvent) {
+      createdEvent = {
+        id: `evt-${Date.now()}`,
+        date: newDate,
+        title: newTitle,
+        type: newType,
+        time: newTime,
+        details: newDetails
+      };
+    }
+
+    setEvents(prev => [...prev, createdEvent as CalendarEvent]);
     setIsAddModalOpen(false);
     setNewTitle('');
     setNewDetails('');
@@ -324,46 +399,50 @@ export default function CalendarPage() {
               ))}
             </div>
 
-            {/* Days grid */}
-            <div className="grid grid-cols-7 auto-rows-[100px] border-[#1f212d]">
-              {calendarDays.map((day, idx) => {
-                const dayEvents = filteredEvents.filter(e => e.date === day.dateStr);
-                const isToday = day.dateStr === todayStr;
+            {loading ? (
+              <div className="text-center py-20 text-xs text-gray-500">กำลังโหลดรายการนัดหมาย...</div>
+            ) : (
+              /* Days grid */
+              <div className="grid grid-cols-7 auto-rows-[100px] border-[#1f212d]">
+                {calendarDays.map((day, idx) => {
+                  const dayEvents = filteredEvents.filter(e => e.date === day.dateStr);
+                  const isToday = day.dateStr === todayStr;
 
-                return (
-                  <div 
-                    key={idx}
-                    className={`border-r border-b border-[#1f212d] p-1.5 transition-colors relative flex flex-col justify-between ${
-                      day.isCurrentMonth ? 'bg-transparent' : 'bg-[#090a0f]/40 opacity-40'
-                    } ${isToday ? 'bg-amber-500/5' : ''}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className={`text-[10px] font-bold p-1 rounded-full w-5 h-5 flex items-center justify-center ${
-                        isToday ? 'bg-[#d4af37] text-black font-extrabold' : 'text-gray-400'
-                      }`}>
-                        {day.dayNum}
-                      </span>
-                    </div>
+                  return (
+                    <div 
+                      key={idx}
+                      className={`border-r border-b border-[#1f212d] p-1.5 transition-colors relative flex flex-col justify-between ${
+                        day.isCurrentMonth ? 'bg-transparent' : 'bg-[#090a0f]/40 opacity-40'
+                      } ${isToday ? 'bg-amber-500/5' : ''}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[10px] font-bold p-1 rounded-full w-5 h-5 flex items-center justify-center ${
+                          isToday ? 'bg-[#d4af37] text-black font-extrabold' : 'text-gray-400'
+                        }`}>
+                          {day.dayNum}
+                        </span>
+                      </div>
 
-                    {/* Events for this day */}
-                    <div className="flex-1 mt-1 space-y-1 overflow-y-auto scrollbar-none max-h-[70px]">
-                      {dayEvents.map(evt => {
-                        const style = getEventStyle(evt.type);
-                        return (
-                          <div 
-                            key={evt.id}
-                            className={`p-1 rounded text-[9px] font-bold border leading-none cursor-pointer hover:brightness-110 transition-all truncate ${style.color}`}
-                            title={`${evt.time} - ${evt.title} (${evt.details})`}
-                          >
-                            <span className="opacity-70 mr-0.5">{evt.time}</span> {evt.title}
-                          </div>
-                        );
-                      })}
+                      {/* Events for this day */}
+                      <div className="flex-1 mt-1 space-y-1 overflow-y-auto scrollbar-none max-h-[70px]">
+                        {dayEvents.map(evt => {
+                          const style = getEventStyle(evt.type);
+                          return (
+                            <div 
+                              key={evt.id}
+                              className={`p-1 rounded text-[9px] font-bold border leading-none cursor-pointer hover:brightness-110 transition-all truncate ${style.color}`}
+                              title={`${evt.time} - ${evt.title} (${evt.details})`}
+                            >
+                              <span className="opacity-70 mr-0.5">{evt.time}</span> {evt.title}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
         </div>
