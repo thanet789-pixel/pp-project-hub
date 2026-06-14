@@ -79,24 +79,58 @@ export async function POST(req: NextRequest) {
         else if (messageType === 'image') {
           const messageId = message.id;
           console.log(`[LINE Webhook] Image received with ID: ${messageId}`);
-
+ 
           // 1. Download image from LINE Content Server
           const imageBuffer = await downloadLineContent(messageId);
-
-          // 2. Upload to Supabase Storage
+ 
+          // Find project details BEFORE uploading to storage
+          let projectId = null;
+          let projectFolderName = 'unlinked_photos';
+          
+          try {
+            const { data: matchedProjects } = await supabaseAdmin
+              .from('projects')
+              .select('id, name')
+              .eq('line_group_id', groupId)
+              .limit(1);
+ 
+            if (matchedProjects && matchedProjects.length > 0) {
+              projectId = matchedProjects[0].id;
+              // Clean name to be safe for folder paths
+              projectFolderName = matchedProjects[0].name.trim().replace(/\s+/g, '_');
+              console.log(`[LINE Webhook] Matched project: ${matchedProjects[0].name} (ID: ${projectId})`);
+            } else {
+              // Fallback: Pick the first available project
+              const { data: fallbackProjects } = await supabaseAdmin
+                .from('projects')
+                .select('id, name')
+                .limit(1);
+ 
+              if (fallbackProjects && fallbackProjects.length > 0) {
+                projectId = fallbackProjects[0].id;
+                projectFolderName = fallbackProjects[0].name.trim().replace(/\s+/g, '_') + '_fallback';
+                console.log(`[LINE Webhook] No match found. Falling back to project: ${fallbackProjects[0].name}`);
+              }
+            }
+          } catch (dbErr) {
+            console.error('[LINE Webhook] Error querying project for storage naming:', dbErr);
+          }
+ 
+          // 2. Upload to Supabase Storage in the custom project folder
           let photoUrl = '';
           try {
-            photoUrl = await uploadToSupabaseStorage(imageBuffer, `line_${messageId}.jpg`, groupId);
+            // Path: projects/[project-name]/line_[messageId].jpg
+            photoUrl = await uploadToSupabaseStorage(imageBuffer, `line_${messageId}.jpg`, `projects/${projectFolderName}`);
             console.log(`[Supabase Storage] Uploaded photo successfully: ${photoUrl}`);
             
             // 3. Save metadata to Database
-            savePhotoToDatabase(photoUrl, groupId).catch(dbErr => {
-              console.error('Failed to save photo metadata to DB:', dbErr);
-            });
+            if (projectId) {
+              await savePhotoToDatabaseWithId(photoUrl, projectId, groupId);
+            }
           } catch (err) {
             console.error('Error uploading to Supabase Storage:', err);
           }
-
+ 
           // 4. Reply confirmation to the installer group chat
           if (replyToken) {
             const replyMsg = photoUrl 
@@ -197,65 +231,37 @@ async function uploadToSupabaseStorage(fileBuffer: Buffer, fileName: string, pro
   return publicUrl;
 }
 
-// Insert photo metadata into Supabase Database
-async function savePhotoToDatabase(publicUrl: string, projectFolderKey: string) {
+// Insert photo metadata into Supabase Database using a known projectId
+async function savePhotoToDatabaseWithId(publicUrl: string, projectId: string, projectFolderKey: string) {
   try {
-    // 1. Find the project to link this photo to.
-    let projectId = null;
-    const { data: matchedProjects } = await supabaseAdmin
-      .from('projects')
-      .select('id')
-      .eq('line_group_id', projectFolderKey)
-      .limit(1);
+    console.log(`[Supabase Database] Linking photo to project ID: ${projectId}`);
 
-    if (matchedProjects && matchedProjects.length > 0) {
-      projectId = matchedProjects[0].id;
-      console.log(`[Supabase Database] Matched photo to project by line_group_id: ${projectId}`);
-    } else {
-      // Fallback: Pick the first available project
-      const { data: fallbackProjects } = await supabaseAdmin
-        .from('projects')
-        .select('id')
-        .limit(1);
+    // 1. Insert into timelines table
+    const { data: timelineEvent, error: timelineError } = await supabaseAdmin
+      .from('timelines')
+      .insert({
+        project_id: projectId,
+        event_type: 'photo',
+        content: `📸 อัปโหลดรูปภาพรายงานความคืบหน้าจาก LINE (${projectFolderKey})`
+      })
+      .select()
+      .single();
 
-      if (fallbackProjects && fallbackProjects.length > 0) {
-        projectId = fallbackProjects[0].id;
-        console.log(`[Supabase Database] No line_group_id match found. Falling back to project: ${projectId}`);
-      }
-    }
+    if (timelineError) throw timelineError;
 
-    if (projectId) {
-      console.log(`[Supabase Database] Linking photo to project ID: ${projectId}`);
-
-      // 2. Insert into timelines table
-      const { data: timelineEvent, error: timelineError } = await supabaseAdmin
-        .from('timelines')
+    if (timelineEvent) {
+      // 2. Insert into photos table
+      const { error: photoError } = await supabaseAdmin
+        .from('photos')
         .insert({
           project_id: projectId,
-          event_type: 'photo',
-          content: `📸 อัปโหลดรูปภาพรายงานความคืบหน้าจาก LINE (${projectFolderKey})`
-        })
-        .select()
-        .single();
+          timeline_id: timelineEvent.id,
+          url: publicUrl,
+          room_type: 'รายงานจาก LINE'
+        });
 
-      if (timelineError) throw timelineError;
-
-      if (timelineEvent) {
-        // 3. Insert into photos table
-        const { error: photoError } = await supabaseAdmin
-          .from('photos')
-          .insert({
-            project_id: projectId,
-            timeline_id: timelineEvent.id,
-            url: publicUrl,
-            room_type: 'รายงานจาก LINE'
-          });
-
-        if (photoError) throw photoError;
-        console.log('[Supabase Database] Successfully inserted timeline event and photo record.');
-      }
-    } else {
-      console.log('[Supabase Database] No projects found to link this photo to.');
+      if (photoError) throw photoError;
+      console.log('[Supabase Database] Successfully inserted timeline event and photo record.');
     }
   } catch (dbErr) {
     console.error('[Supabase Database] Error saving photo record:', dbErr);
