@@ -116,9 +116,12 @@ export default function AppShell({ children }: AppShellProps) {
           <p className="text-xs text-gray-400 mb-3 leading-relaxed">
             รับการแจ้งเตือนและอัปเดตสถานะงานส่งตรงผ่าน LINE Notify
           </p>
-          <button className="w-full py-2 px-3 rounded-lg bg-[#c5a880] hover:bg-[#b0936b] text-black font-bold text-xs transition-colors duration-200 shadow-md">
+          <Link 
+            href="/settings" 
+            className="block w-full py-2 px-3 rounded-lg bg-[#c5a880] hover:bg-[#b0936b] text-black font-bold text-xs text-center transition-colors duration-200 shadow-md"
+          >
             เชื่อมต่อเลย
-          </button>
+          </Link>
         </div>
 
         {/* User Profile */}
