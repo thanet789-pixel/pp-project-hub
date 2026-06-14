@@ -217,8 +217,8 @@ export async function POST(req: NextRequest) {
           // 2. Upload to Supabase Storage in the custom project folder
           let photoUrl = '';
           try {
-            // Path: projects/[project-name]/line_[messageId].jpg
-            photoUrl = await uploadToSupabaseStorage(imageBuffer, `line_${messageId}.jpg`, `projects/${projectFolderName}`);
+            // Path: [project-id]/line_[messageId].jpg (safe ASCII path)
+            photoUrl = await uploadToSupabaseStorage(imageBuffer, `line_${messageId}.jpg`, projectId || 'unlinked_photos');
             console.log(`[Supabase Storage] Uploaded photo successfully: ${photoUrl}`);
             
             // 3. Save metadata to Database
