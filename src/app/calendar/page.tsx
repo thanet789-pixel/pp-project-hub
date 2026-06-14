@@ -34,11 +34,33 @@ export default function CalendarPage() {
   // Calendar active month/year (starting on June 2026 to align with mock events)
   const [currentYear, setCurrentYear] = useState(2026);
   const [currentMonth, setCurrentMonth] = useState(5); // June is index 5
+  const [todayStr, setTodayStr] = useState('2026-06-14'); // Default mock today
   
   const thaiMonths = [
     'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
     'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
   ];
+  
+  // Modals and Forms
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDate, setNewDate] = useState('2026-06-14');
+  const [newTime, setNewTime] = useState('09:00');
+  const [newType, setNewType] = useState<EventType>('install');
+  const [newDetails, setNewDetails] = useState('');
+
+  // Dynamically set today's date and active month on component mount
+  useEffect(() => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = (today.getMonth() + 1).toString().padStart(2, '0');
+    const d = today.getDate().toString().padStart(2, '0');
+    const formattedDate = `${y}-${m}-${d}`;
+    setTodayStr(formattedDate);
+    setNewDate(formattedDate);
+    setCurrentYear(y);
+    setCurrentMonth(today.getMonth());
+  }, []);
   
   const handlePrevMonth = () => {
     if (currentMonth === 0) {
@@ -59,17 +81,10 @@ export default function CalendarPage() {
   };
 
   const handleGoToToday = () => {
-    setCurrentYear(2026);
-    setCurrentMonth(5);
+    const today = new Date();
+    setCurrentYear(today.getFullYear());
+    setCurrentMonth(today.getMonth());
   };
-  
-  // Modals and Forms
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newDate, setNewDate] = useState('2026-06-13');
-  const [newTime, setNewTime] = useState('09:00');
-  const [newType, setNewType] = useState<EventType>('install');
-  const [newDetails, setNewDetails] = useState('');
 
   // Checklist states
   const [teamFilters, setTeamFilters] = useState({
@@ -313,7 +328,7 @@ export default function CalendarPage() {
             <div className="grid grid-cols-7 auto-rows-[100px] border-[#1f212d]">
               {calendarDays.map((day, idx) => {
                 const dayEvents = filteredEvents.filter(e => e.date === day.dateStr);
-                const isToday = day.dateStr === '2026-06-13'; // Mock current date
+                const isToday = day.dateStr === todayStr;
 
                 return (
                   <div 
