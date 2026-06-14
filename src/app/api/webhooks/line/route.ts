@@ -64,13 +64,101 @@ export async function POST(req: NextRequest) {
           const text = message.text.trim();
           console.log(`[LINE Webhook] Text received from ${groupId}: "${text}"`);
           
-          // Reply confirmation to LINE using fetch to LINE API
           if (replyToken) {
             const lowerText = text.toLowerCase();
             if (lowerText === '#id' || lowerText === '@check' || lowerText === 'id' || lowerText === 'check') {
               const replyMsg = `PP Project Hub 🔑 ID Info:\n\n• Type: ${source.type}\n• ID: ${groupId}\n\nคัดลอกรหัส ID ด้านบนไปกรอกในช่องตั้งค่า LINE Group ID ของโปรเจกต์บนเว็บเบราว์เซอร์ได้เลยครับ`;
               await sendLineReply(replyToken, replyMsg);
-            } else {
+            } 
+            
+            // Handle project switching hashtags like #บ้านคุณเอก or #คอนโดA12
+            else if (text.startsWith('#')) {
+              const keyword = text.substring(1).trim(); // Remove the '#'
+              
+              if (keyword) {
+                // Find project with matching name under the same groupId
+                const { data: projects } = await supabaseAdmin
+                  .from('projects')
+                  .select('id, name')
+                  .eq('line_group_id', groupId);
+                
+                if (projects && projects.length > 0) {
+                  // Search for case-insensitive partial match on name
+                  const matched = projects.find(p => 
+                    p.name.toLowerCase().includes(keyword.toLowerCase())
+                  );
+                  
+                  if (matched) {
+                    // Update all projects for this group to inactive
+                    await supabaseAdmin
+                      .from('projects')
+                      .update({ is_line_active: false })
+                      .eq('line_group_id', groupId);
+                    
+                    // Set the matched one to active
+                    await supabaseAdmin
+                      .from('projects')
+                      .update({ is_line_active: true })
+                      .eq('id', matched.id);
+                    
+                    const replyMsg = `PP Project Hub 🔄 สลับโปรเจกต์สำเร็จ!\n\n📌 โปรเจกต์ที่ใช้งานอยู่ตอนนี้: "${matched.name}"\n\n📸 รูปภาพถัดจากนี้จะถูกบันทึกเข้าโปรเจกต์นี้โดยอัตโนมัติครับ`;
+                    await sendLineReply(replyToken, replyMsg);
+                  } else {
+                    // Match any project in the database
+                    const { data: allProjects } = await supabaseAdmin
+                      .from('projects')
+                      .select('id, name');
+                    
+                    const matchedAny = allProjects?.find(p => 
+                      p.name.toLowerCase().includes(keyword.toLowerCase())
+                    );
+                    
+                    if (matchedAny) {
+                      // Map this group to the project and make it active
+                      await supabaseAdmin
+                        .from('projects')
+                        .update({ line_group_id: groupId, is_line_active: true })
+                        .eq('id', matchedAny.id);
+                      
+                      // Set others with this line_group_id to inactive
+                      await supabaseAdmin
+                        .from('projects')
+                        .update({ is_line_active: false })
+                        .eq('line_group_id', groupId)
+                        .not('id', 'eq', matchedAny.id);
+                        
+                      const replyMsg = `PP Project Hub 🔗 เชื่อมต่อโปรเจกต์ใหม่สำเร็จ!\n\n📌 โครงการ: "${matchedAny.name}" ถูกเชื่อมเข้ากับห้องแชทนี้แล้ว\n\n📸 รูปภาพถัดจากนี้จะถูกบันทึกเข้าโปรเจกต์นี้โดยอัตโนมัติครับ`;
+                      await sendLineReply(replyToken, replyMsg);
+                    } else {
+                      await sendLineReply(replyToken, `PP Project Hub: ❌ ไม่พบโครงการที่ตรงกับคำค้นหา "${keyword}" ในระบบครับ`);
+                    }
+                  }
+                } else {
+                  // No projects linked to this group yet, search all projects
+                  const { data: allProjects } = await supabaseAdmin
+                    .from('projects')
+                    .select('id, name');
+                  
+                  const matchedAny = allProjects?.find(p => 
+                    p.name.toLowerCase().includes(keyword.toLowerCase())
+                  );
+                  
+                  if (matchedAny) {
+                    await supabaseAdmin
+                      .from('projects')
+                      .update({ line_group_id: groupId, is_line_active: true })
+                      .eq('id', matchedAny.id);
+                      
+                    const replyMsg = `PP Project Hub 🔗 เชื่อมต่อโปรเจกต์ใหม่สำเร็จ!\n\n📌 โครงการ: "${matchedAny.name}" ถูกเชื่อมเข้ากับห้องแชทนี้แล้ว\n\n📸 รูปภาพถัดจากนี้จะถูกบันทึกเข้าโปรเจกต์นี้โดยอัตโนมัติครับ`;
+                    await sendLineReply(replyToken, replyMsg);
+                  } else {
+                    await sendLineReply(replyToken, `PP Project Hub: ❌ ไม่พบโครงการที่ตรงกับคำค้นหา "${keyword}" ในระบบครับ`);
+                  }
+                }
+              }
+            }
+            
+            else {
               await sendLineReply(replyToken, `PP Project Hub: ได้รับข้อความรายงานความคืบหน้าเรียบร้อยแล้ว (${text.substring(0, 20)}...)`);
             }
           }
@@ -88,11 +176,21 @@ export async function POST(req: NextRequest) {
           let projectFolderName = 'unlinked_photos';
           
           try {
-            const { data: matchedProjects } = await supabaseAdmin
+            let { data: matchedProjects } = await supabaseAdmin
               .from('projects')
               .select('id, name')
               .eq('line_group_id', groupId)
+              .eq('is_line_active', true)
               .limit(1);
+ 
+            if (!matchedProjects || matchedProjects.length === 0) {
+              const { data: anyMatched } = await supabaseAdmin
+                .from('projects')
+                .select('id, name')
+                .eq('line_group_id', groupId)
+                .limit(1);
+              matchedProjects = anyMatched;
+            }
  
             if (matchedProjects && matchedProjects.length > 0) {
               projectId = matchedProjects[0].id;

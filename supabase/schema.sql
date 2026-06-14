@@ -55,7 +55,8 @@ CREATE TABLE IF NOT EXISTS projects (
     due_date DATE,
     pm_id UUID REFERENCES users(id) ON DELETE SET NULL,
     client_id UUID REFERENCES users(id) ON DELETE SET NULL,
-    line_group_id VARCHAR(255) UNIQUE,
+    line_group_id VARCHAR(255),
+    is_line_active BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
