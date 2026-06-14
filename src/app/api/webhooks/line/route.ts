@@ -195,14 +195,31 @@ async function uploadToSupabaseStorage(fileBuffer: Buffer, fileName: string, pro
 async function savePhotoToDatabase(publicUrl: string, projectFolderKey: string) {
   try {
     // 1. Find the project to link this photo to.
-    const { data: projects } = await supabaseAdmin
+    let projectId = null;
+    const { data: matchedProjects } = await supabaseAdmin
       .from('projects')
       .select('id')
+      .eq('line_group_id', projectFolderKey)
       .limit(1);
 
-    if (projects && projects.length > 0) {
-      const projectId = projects[0].id;
-      console.log(`[Supabase Database] Linking photo to project: ${projectId}`);
+    if (matchedProjects && matchedProjects.length > 0) {
+      projectId = matchedProjects[0].id;
+      console.log(`[Supabase Database] Matched photo to project by line_group_id: ${projectId}`);
+    } else {
+      // Fallback: Pick the first available project
+      const { data: fallbackProjects } = await supabaseAdmin
+        .from('projects')
+        .select('id')
+        .limit(1);
+
+      if (fallbackProjects && fallbackProjects.length > 0) {
+        projectId = fallbackProjects[0].id;
+        console.log(`[Supabase Database] No line_group_id match found. Falling back to project: ${projectId}`);
+      }
+    }
+
+    if (projectId) {
+      console.log(`[Supabase Database] Linking photo to project ID: ${projectId}`);
 
       // 2. Insert into timelines table
       const { data: timelineEvent, error: timelineError } = await supabaseAdmin
