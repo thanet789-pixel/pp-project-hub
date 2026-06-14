@@ -36,6 +36,7 @@ export interface Project {
   dueDate: string;
   pmId: string;
   clientId: string;
+  lineGroupId?: string;
 }
 
 export interface ProjectMember {

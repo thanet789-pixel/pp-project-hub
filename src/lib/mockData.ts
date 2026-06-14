@@ -25,7 +25,8 @@ export const mockProjects: Project[] = [
     startDate: '2026-05-01',
     dueDate: '2026-06-18',
     pmId: 'u2',
-    clientId: 'u7'
+    clientId: 'u7',
+    lineGroupId: 'Cabcde1234567890abcdef1234567890'
   },
   {
     id: 'p2',

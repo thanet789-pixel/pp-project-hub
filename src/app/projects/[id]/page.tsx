@@ -60,6 +60,19 @@ export default function ProjectDetail() {
   // Dynamic progress calculated from tasks
   const [projectProgress, setProjectProgress] = useState(project.progress);
 
+  // LINE Group ID configuration states
+  const [lineGroupIdState, setLineGroupIdState] = useState(project.lineGroupId || '');
+  const [showSaveToast, setShowSaveToast] = useState(false);
+
+  const handleSaveLineGroupId = (e: React.FormEvent) => {
+    e.preventDefault();
+    project.lineGroupId = lineGroupIdState;
+    setShowSaveToast(true);
+    setTimeout(() => {
+      setShowSaveToast(false);
+    }, 3000);
+  };
+
   useEffect(() => {
     // Recalculate progress based on checked tasks for demo completeness
     const total = tasks.length;
@@ -270,6 +283,140 @@ export default function ProjectDetail() {
               </div>
             </div>
           </div>
+
+          {/* TAB 0: OVERVIEW TAB */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              
+              {/* Save Success Banner */}
+              {showSaveToast && (
+                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <div>
+                    <span className="text-xs font-bold text-white block">บันทึกข้อมูลการเชื่อมต่อสำเร็จ!</span>
+                    <span className="text-[10px] text-gray-400 block mt-0.5">เชื่อมต่อโปรเจกต์กับกลุ่ม LINE ID เรียบร้อยแล้ว ระบบพร้อมดึงภาพถ่ายเข้าไทม์ไลน์โดยอัตโนมัติ</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Project Meta Details Card */}
+              <div className="p-6 rounded-2xl bg-[#12131a] border border-[#1f212d] space-y-4">
+                <div className="flex items-center gap-2 border-b border-[#1f212d] pb-3">
+                  <FolderOpen className="w-4 h-4 text-[#c5a880]" />
+                  <h3 className="text-sm font-bold text-white">รายละเอียดโครงการ</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-gray-500 block">ชื่อโครงการ</span>
+                      <span className="text-white font-bold text-sm mt-0.5 block">{project.name}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block">รายละเอียดงาน</span>
+                      <p className="text-gray-300 mt-0.5 leading-relaxed">{project.description}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block">สถานที่ก่อสร้าง</span>
+                      <span className="text-gray-300 mt-0.5 block">📍 {project.address}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-gray-500 block">วันที่เริ่มโครงการ</span>
+                        <span className="text-gray-300 font-semibold mt-0.5 block">{project.startDate}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 block">กำหนดแล้วเสร็จ</span>
+                        <span className="text-gray-300 font-semibold mt-0.5 block">{project.dueDate}</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-gray-500 block">งบประมาณโครงการ</span>
+                        <span className="text-emerald-400 font-bold text-sm mt-0.5 block">฿{project.budget.toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 block">ยอดจ่ายจริงแล้ว</span>
+                        <span className="text-gray-300 font-bold text-sm mt-0.5 block">฿{project.actualSpent.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* LINE Group Integration Configuration Card */}
+              <div className="p-6 rounded-2xl bg-[#12131a] border border-[#1f212d] space-y-5">
+                <div className="flex items-center justify-between border-b border-[#1f212d] pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-[#06c755] flex items-center justify-center text-white font-extrabold text-[10px] select-none">
+                      L
+                    </div>
+                    <h3 className="text-sm font-bold text-white">เชื่อมต่อ LINE Group ID</h3>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold ${
+                    lineGroupIdState 
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                      : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                  }`}>
+                    {lineGroupIdState ? 'เชื่อมต่อแล้ว' : 'ยังไม่ได้เชื่อมต่อ'}
+                  </span>
+                </div>
+
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  นำรหัสกลุ่ม LINE (Group ID) เช่น <code className="text-[#c5a880] font-mono bg-[#14161e] px-1.5 py-0.5 rounded">Cabcde123...</code> ที่ได้จากบอทหรือเซิร์ฟเวอร์ มากรอกในช่องด้านล่างนี้ เพื่อให้รูปรายงานหน้างานเชื่อมเข้าสู่แท็บรูปภาพและไทม์ไลน์ของโปรเจกต์นี้โดยตรง
+                </p>
+
+                <form onSubmit={handleSaveLineGroupId} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 mb-1.5">LINE Group ID ของกลุ่มไลน์โครงการ *</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        value={lineGroupIdState}
+                        onChange={(e) => setLineGroupIdState(e.target.value)}
+                        placeholder="กรอกรหัสกลุ่ม LINE เช่น C876543210abcdef..."
+                        className="w-full px-3.5 py-2 rounded-xl bg-[#1a1c25] border border-[#2b2e3e] text-xs text-white font-mono focus:outline-none focus:border-[#c5a880] transition-colors placeholder-gray-600" 
+                        required
+                      />
+                      <button 
+                        type="submit"
+                        className="py-2 px-5 rounded-xl bg-[#c5a880] hover:bg-[#b0936b] text-black font-bold text-xs whitespace-nowrap transition-colors"
+                      >
+                        บันทึกการเชื่อมต่อ
+                      </button>
+                    </div>
+                  </div>
+                </form>
+
+                {/* Helpful guides on how to get the Group ID */}
+                <div className="p-4 rounded-xl bg-[#14161e] border border-[#1f212d] space-y-3">
+                  <div className="flex items-center gap-2 text-[#c5a880] text-xs font-bold">
+                    <Info className="w-4 h-4 shrink-0" />
+                    <span>💡 วิธีการดึงรหัส LINE Group ID เพื่อมาเชื่อมโยงโครงการ</span>
+                  </div>
+                  <ol className="text-xs text-gray-400 space-y-2 list-decimal pl-4 leading-relaxed">
+                    <li>
+                      <strong>ดึงบอทเข้ากลุ่ม</strong>: ตรวจสอบว่าเชิญ LINE Bot เข้าไปใน LINE Group ของช่างหน้างานแล้ว
+                    </li>
+                    <li>
+                      <strong>พิมพ์ข้อความกระตุ้น</strong>: พิมพ์คำว่า <code className="text-white font-mono bg-[#1f212d] px-1 py-0.5 rounded">#ID</code> หรือ <code className="text-white font-mono bg-[#1f212d] px-1 py-0.5 rounded">@check</code> ส่งเข้าไปในห้องแชทกลุ่มนั้นๆ
+                    </li>
+                    <li>
+                      <strong>คัดลอกรหัสกลุ่ม</strong>: บอทจะตอบกลับข้อความพร้อมรหัสกลุ่มขึ้นต้นด้วยตัว <code className="text-[#c5a880] font-mono bg-[#1f212d] px-1 py-0.5 rounded">C</code> (เช่น <code className="text-white font-mono bg-[#1f212d] px-1.5 py-0.5 rounded">C876543210abcdef...</code>) หรือสามารถเปิดดูได้จาก Vercel Realtime Logs ของ Webhook API
+                    </li>
+                    <li>
+                      <strong>บันทึกระบบ</strong>: คัดลอกรหัสนั้นมาใส่ในช่องด้านบนนี้แล้วกด <strong className="text-white">"บันทึกการเชื่อมต่อ"</strong> เพื่อเสร็จสิ้นขั้นตอน
+                    </li>
+                  </ol>
+                </div>
+
+              </div>
+
+            </div>
+          )}
 
           {/* TAB 1: TIMELINE TAB */}
           {activeTab === 'timeline' && (
