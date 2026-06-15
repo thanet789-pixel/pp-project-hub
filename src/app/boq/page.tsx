@@ -17,7 +17,15 @@ import {
   TrendingUp,
   Percent,
   Calculator,
-  Box
+  Box,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  ChevronRight,
+  Coins,
+  BarChart3,
+  ArrowRight,
+  ArrowLeft
 } from 'lucide-react';
 
 // Interfaces
@@ -442,6 +450,11 @@ export default function BOQPage() {
   const [newCatalogItem, setNewCatalogItem] = useState('');
   const [editingCatalogIndex, setEditingCatalogIndex] = useState<number | null>(null);
   const [editingCatalogValue, setEditingCatalogValue] = useState('');
+  // UX Overhaul States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedAreas, setExpandedAreas] = useState<Record<string, boolean>>({});
+  const [expandedSpecs, setExpandedSpecs] = useState<Record<string, boolean>>({});
+  const [formTab, setFormTab] = useState<'info' | 'specs' | 'pricing'>('info');
 
   // Toast
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -654,6 +667,7 @@ export default function BOQPage() {
     setItemQty(item.quantity);
     setItemRate(item.rate);
     setItemCost(item.costPerUnit);
+    setFormTab('info');
     setIsEditItemModalOpen(true);
   };
 
@@ -746,6 +760,7 @@ export default function BOQPage() {
     setItemQty(1);
     setItemRate(0);
     setItemCost(0);
+    setFormTab('info');
   };
 
   // Print function
@@ -797,42 +812,68 @@ export default function BOQPage() {
           <div className="bg-[#12131a] border border-[#1f212d] rounded-2xl p-4 space-y-3">
             <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">ใบเสนอราคา BOQ ในระบบ</h3>
             
-            <div className="space-y-2">
-              {boqs.map(boq => {
-                const calculations = getBOQCalculations(boq);
-                const isActive = boq.id === activeBOQ.id;
-                return (
-                  <div 
-                    key={boq.id}
-                    onClick={() => setSelectedBOQId(boq.id)}
-                    className={`p-3 rounded-xl border text-left cursor-pointer transition-all duration-300 ${
-                      isActive 
-                        ? 'bg-[#d4af37]/10 border-[#c5a880] shadow-[0_0_10px_rgba(197,168,128,0.05)]' 
-                        : 'bg-[#1c1d24]/50 border-[#2d2f3d] hover:bg-[#1c1d24]'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start gap-2">
-                      <h4 className={`text-xs font-bold truncate ${isActive ? 'text-[#c5a880]' : 'text-white'}`}>
-                        {boq.projectName}
-                      </h4>
-                      <span className={`text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded border shrink-0 ${
-                        boq.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                        boq.status === 'rejected' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                        'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                      }`}>
-                        {boq.status === 'approved' ? 'อนุมัติ' : boq.status === 'rejected' ? 'ปฏิเสธ' : 'ร่างแบบ'}
-                      </span>
+            {/* Search Bar */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="ค้นหาโครงการ / ชื่อลูกค้า..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#c5a880] transition-colors"
+              />
+              <Search className="w-3.5 h-3.5 text-gray-500 absolute left-2.5 top-2.5" />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-2 text-gray-400 hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1 scrollbar-thin">
+              {boqs
+                .filter(boq => 
+                  boq.projectName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                  boq.clientName.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map(boq => {
+                  const calculations = getBOQCalculations(boq);
+                  const isActive = boq.id === activeBOQ.id;
+                  return (
+                    <div 
+                      key={boq.id}
+                      onClick={() => setSelectedBOQId(boq.id)}
+                      className={`p-3 rounded-xl border text-left cursor-pointer transition-all duration-300 ${
+                        isActive 
+                          ? 'bg-[#d4af37]/10 border-[#c5a880] shadow-[0_0_10px_rgba(197,168,128,0.05)]' 
+                          : 'bg-[#1c1d24]/50 border-[#2d2f3d] hover:bg-[#1c1d24]'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <h4 className={`text-xs font-bold truncate ${isActive ? 'text-[#c5a880]' : 'text-white'}`}>
+                          {boq.projectName}
+                        </h4>
+                        <span className={`text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded border shrink-0 ${
+                          boq.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                          boq.status === 'rejected' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                          'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                        }`}>
+                          {boq.status === 'approved' ? 'อนุมัติ' : boq.status === 'rejected' ? 'ปฏิเสธ' : 'ร่างแบบ'}
+                        </span>
+                      </div>
+                      
+                      <p className="text-[10px] text-gray-400 truncate mt-1">ผู้จ้าง: {boq.clientName}</p>
+                      
+                      <div className="flex justify-between items-center mt-3 pt-2 border-t border-[#1f212d]/50 text-[10px] text-gray-400">
+                        <span>ยอดสุทธิ:</span>
+                        <strong className="text-white">฿{calculations.grandTotal.toLocaleString(undefined, {maximumFractionDigits: 0})}</strong>
+                      </div>
                     </div>
-                    
-                    <p className="text-[10px] text-gray-400 truncate mt-1">ผู้จ้าง: {boq.clientName}</p>
-                    
-                    <div className="flex justify-between items-center mt-3 pt-2 border-t border-[#1f212d]/50 text-[10px] text-gray-400">
-                      <span>ยอดสุทธิ:</span>
-                      <strong className="text-white">฿{calculations.grandTotal.toLocaleString(undefined, {maximumFractionDigits: 0})}</strong>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           </div>
           
@@ -979,6 +1020,94 @@ export default function BOQPage() {
                 </div>
               </div>
 
+              {/* Executive Summary Dashboard Widget */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:hidden">
+                {/* Grand Total Card */}
+                <div className="bg-[#12131a]/80 backdrop-blur-md border border-[#c5a880]/30 rounded-2xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden group hover:border-[#c5a880]/60 transition-all duration-300">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-[#c5a880]/5 blur-2xl rounded-full" />
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">ยอดรวมเสนอขายสุทธิ</span>
+                    <strong className="text-lg md:text-xl font-extrabold text-white font-mono block">
+                      ฿{cal.grandTotal.toLocaleString(undefined, {maximumFractionDigits: 0})}
+                    </strong>
+                    <span className="text-[8px] text-gray-500 font-bold block">(รวมภาษี VAT 7% เรียบร้อย)</span>
+                  </div>
+                  <div className="p-3 bg-[#c5a880]/10 rounded-xl text-[#c5a880] group-hover:scale-110 transition-transform">
+                    <Coins className="w-5 h-5" />
+                  </div>
+                </div>
+
+                {/* Total Cost Card */}
+                {viewMode === 'internal' ? (
+                  <div className="bg-[#12131a]/80 backdrop-blur-md border border-red-500/20 rounded-2xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden group hover:border-red-500/40 transition-all duration-300">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 blur-2xl rounded-full" />
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">ราคาทุนวัสดุ + ค่าแรง</span>
+                      <strong className="text-lg md:text-xl font-extrabold text-white font-mono block">
+                        ฿{cal.totalCost.toLocaleString(undefined, {maximumFractionDigits: 0})}
+                      </strong>
+                      <div className="w-28 h-1.5 bg-gray-800 rounded-full mt-2 overflow-hidden">
+                        <div 
+                          className="h-full bg-red-500/80 rounded-full" 
+                          style={{ width: `${(cal.totalCost / (cal.subtotal || 1)) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="p-3 bg-red-500/10 rounded-xl text-red-400 group-hover:scale-110 transition-transform">
+                      <BarChart3 className="w-5 h-5" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-[#12131a]/80 backdrop-blur-md border border-[#1f212d] rounded-2xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden group hover:border-[#c5a880]/20 transition-all duration-300">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 blur-2xl rounded-full" />
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">จำนวนรายการติดตั้ง</span>
+                      <strong className="text-lg md:text-xl font-extrabold text-[#c5a880] font-mono block">
+                        {activeBOQ.items.length} รายการ
+                      </strong>
+                      <span className="text-[8px] text-gray-500 font-bold block">กระจายตามพื้นที่ทั้งหมด</span>
+                    </div>
+                    <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400 group-hover:scale-110 transition-transform">
+                      <FileSpreadsheet className="w-5 h-5" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Profit Margin Card */}
+                {viewMode === 'internal' ? (
+                  <div className="bg-[#12131a]/80 backdrop-blur-md border border-emerald-500/20 rounded-2xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden group hover:border-emerald-500/40 transition-all duration-300">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 blur-2xl rounded-full" />
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">กำไรขั้นต้น (GP Margin)</span>
+                      <strong className="text-lg md:text-xl font-extrabold text-emerald-400 font-mono block">
+                        ฿{cal.profit.toLocaleString(undefined, {maximumFractionDigits: 0})}
+                      </strong>
+                      <span className="text-[9px] text-emerald-500 font-bold flex items-center gap-1">
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        {cal.marginPercent.toFixed(1)}% อัตรากำไร
+                      </span>
+                    </div>
+                    <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400 group-hover:scale-110 transition-transform">
+                      <TrendingUp className="w-5 h-5" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-[#12131a]/80 backdrop-blur-md border border-[#1f212d] rounded-2xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden group hover:border-[#c5a880]/20 transition-all duration-300">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 blur-2xl rounded-full" />
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">มาตรฐานคุณภาพ</span>
+                      <strong className="text-xs font-bold text-white block mt-1">
+                        รับประกันงานติดตั้งโครงสร้าง 1 ปี
+                      </strong>
+                      <span className="text-[8px] text-gray-500 font-bold block">พร้อมทีมดูแลบำรุงรักษา</span>
+                    </div>
+                    <div className="p-3 bg-purple-500/10 rounded-xl text-purple-400 group-hover:scale-110 transition-transform">
+                      <Check className="w-5 h-5" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* BOQ Items Area Groups */}
               {activeBOQ.items.length === 0 ? (
                 <div className="text-center py-12 border border-dashed border-[#1f212d] rounded-2xl text-xs text-gray-500">
@@ -996,142 +1125,194 @@ export default function BOQPage() {
 
                     // Get distinct categories in this room
                     const categoriesInRoom = Array.from(new Set(roomItems.map(item => item.category || 'งานตกแต่งภายในอื่นๆ (Other Built-in Items)')));
+                    
+                    const isAreaExpanded = expandedAreas[roomName] !== false;
+                    const toggleArea = () => {
+                      setExpandedAreas(prev => ({
+                        ...prev,
+                        [roomName]: !isAreaExpanded
+                      }));
+                    };
 
                     return (
                       <div key={roomName} className="space-y-3 min-w-[650px] bg-[#12131a]/25 border border-[#1f212d]/40 p-4 rounded-2xl print:border-gray-200 print:p-0">
-                        {/* Area Title */}
-                        <div className="flex justify-between items-center border-b border-[#1f212d] pb-2 print:border-gray-200">
-                          <h4 className="text-xs font-bold text-[#c5a880] print:text-black flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#c5a880]" />
+                        {/* Area Title Accordion */}
+                        <div 
+                          onClick={toggleArea}
+                          className="flex justify-between items-center border-b border-[#1f212d]/60 pb-2 cursor-pointer group select-none print:border-gray-200"
+                        >
+                          <h4 className="text-xs font-bold text-[#c5a880] print:text-black flex items-center gap-2">
+                            <span className="print:hidden text-gray-500 group-hover:text-[#c5a880] transition-colors">
+                              {isAreaExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                            </span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#c5a880] print:block" />
                             <span>{roomName}</span>
                           </h4>
-                          <span className="text-[10px] text-gray-400 print:text-black">
-                            ยอดรวมพื้นที่: <strong className="text-white print:text-black">฿{roomSubtotal.toLocaleString()}</strong>
+                          <span className="text-[10px] text-gray-400 print:text-black flex items-center gap-2">
+                            <span>รวมพื้นที่:</span>
+                            <strong className="text-white print:text-black font-mono">฿{roomSubtotal.toLocaleString()}</strong>
                             {viewMode === 'internal' && (
                               <span className="text-emerald-400 font-bold ml-1.5">
                                 (กำไร: ฿{roomProfit.toLocaleString()} | {roomMargin.toFixed(0)}%)
                               </span>
                             )}
+                            <span className="text-[8px] bg-[#1c1d24] text-gray-400 px-1.5 py-0.5 rounded font-extrabold uppercase print:hidden group-hover:bg-[#c5a880] group-hover:text-black transition-colors">
+                              {isAreaExpanded ? 'คลิกเพื่อหุบ' : 'คลิกเพื่อกาง'}
+                            </span>
                           </span>
                         </div>
 
-                        {/* Items Table */}
-                        <table className="w-full text-left text-xs border-collapse">
-                          <thead>
-                            <tr className="text-gray-400 border-b border-[#1f212d]/60 text-[9px] font-bold uppercase tracking-wider print:text-gray-700">
-                              <th className="py-2.5 pl-2 w-1/3">รายการเฟอร์นิเจอร์ / สเปกวัสดุ</th>
-                              <th className="py-2.5 text-center w-12">หน่วย</th>
-                              <th className="py-2.5 text-center w-12">จำนวน</th>
-                              {viewMode === 'internal' && (
-                                <>
-                                  <th className="py-2.5 text-right w-20">ทุนต่อหน่วย</th>
-                                  <th className="py-2.5 text-right w-20">ราคาทุนรวม</th>
-                                </>
-                              )}
-                              <th className="py-2.5 text-right w-20">ราคาเสนอขาย</th>
-                              <th className="py-2.5 text-right w-24">ราคารวมเสนอ</th>
-                              <th className="py-2.5 text-right w-16 print:hidden">การจัดการ</th>
-                            </tr>
-                          </thead>
-                          <tbody className="text-gray-300 print:text-black">
-                            {categoriesInRoom.map(catName => {
-                              const catItems = roomItems.filter(item => (item.category || 'งานตกแต่งภายในอื่นๆ (Other Built-in Items)') === catName);
-                              const catSubtotal = catItems.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
-                              const catCostSubtotal = catItems.reduce((sum, item) => sum + (item.quantity * item.costPerUnit), 0);
-                              const catProfit = catSubtotal - catCostSubtotal;
-                              const catMargin = catSubtotal > 0 ? (catProfit / catSubtotal) * 100 : 0;
+                        {/* Collapsible Area content */}
+                        {isAreaExpanded && (
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="text-gray-400 border-b border-[#1f212d]/60 text-[9px] font-bold uppercase tracking-wider print:text-gray-700">
+                                <th className="py-2.5 pl-2 w-1/3">รายการเฟอร์นิเจอร์ / สเปกวัสดุ</th>
+                                <th className="py-2.5 text-center w-12">หน่วย</th>
+                                <th className="py-2.5 text-center w-12">จำนวน</th>
+                                {viewMode === 'internal' && (
+                                  <>
+                                    <th className="py-2.5 text-right w-20">ทุนต่อหน่วย</th>
+                                    <th className="py-2.5 text-right w-20">ราคาทุนรวม</th>
+                                  </>
+                                )}
+                                <th className="py-2.5 text-right w-20">ราคาเสนอขาย</th>
+                                <th className="py-2.5 text-right w-24">ราคารวมเสนอ</th>
+                                <th className="py-2.5 text-right w-16 print:hidden">การจัดการ</th>
+                              </tr>
+                            </thead>
+                            <tbody className="text-gray-300 print:text-black">
+                              {categoriesInRoom.map(catName => {
+                                const catItems = roomItems.filter(item => (item.category || 'งานตกแต่งภายในอื่นๆ (Other Built-in Items)') === catName);
+                                const catSubtotal = catItems.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
+                                const catCostSubtotal = catItems.reduce((sum, item) => sum + (item.quantity * item.costPerUnit), 0);
+                                const catProfit = catSubtotal - catCostSubtotal;
+                                const catMargin = catSubtotal > 0 ? (catProfit / catSubtotal) * 100 : 0;
 
-                              return (
-                                <React.Fragment key={catName}>
-                                  {/* Category Subheader Row */}
-                                  <tr className="bg-[#1c1d24]/50 border-b border-[#1f212d]/40 print:bg-gray-100/50 print:border-gray-200">
-                                    <td colSpan={viewMode === 'internal' ? 6 : 4} className="py-2 pl-2.5 pr-4 font-extrabold text-[9px] text-[#c5a880] print:text-black uppercase tracking-wider">
-                                      📁 {catName}
-                                      {viewMode === 'internal' && (
-                                        <span className="text-emerald-400 font-bold normal-case ml-2">
-                                          (มาร์กอัปหมวด: {((catSubtotal - catCostSubtotal) / (catCostSubtotal || 1) * 100).toFixed(0)}% | กำไร: ฿{catProfit.toLocaleString()})
-                                        </span>
-                                      )}
-                                    </td>
-                                    <td className="py-2 text-right font-bold text-[9px] text-[#c5a880] print:text-black font-mono">
-                                      ฿{catSubtotal.toLocaleString()}
-                                    </td>
-                                    <td className="py-2 print:hidden"></td>
-                                  </tr>
-
-                                  {/* Items in this Category */}
-                                  {catItems.map(item => (
-                                    <tr key={item.id} className="hover:bg-white/5 border-b border-[#1f212d]/10 transition-colors print:hover:bg-transparent print:border-gray-100">
-                                      <td className="py-3 pl-4 pr-4 border-l-2 border-[#1f212d] hover:border-[#c5a880]/30">
-                                        <div className="font-bold text-white print:text-black text-xs leading-tight">{item.name}</div>
-                                        {item.subCategory && (
-                                          <span className="inline-block text-[8px] font-bold bg-[#1c1d24]/80 text-[#c5a880] px-1.5 py-0.5 rounded mt-1 border border-[#2d2f3d]/50 print:bg-gray-100 print:text-gray-600 print:border-gray-300">
-                                            {item.subCategory}
+                                return (
+                                  <React.Fragment key={catName}>
+                                    {/* Category Subheader Row */}
+                                    <tr className="bg-[#1c1d24]/50 border-b border-[#1f212d]/40 print:bg-gray-100/50 print:border-gray-200">
+                                      <td colSpan={viewMode === 'internal' ? 6 : 4} className="py-2 pl-2.5 pr-4 font-extrabold text-[9px] text-[#c5a880] print:text-black uppercase tracking-wider">
+                                        📁 {catName}
+                                        {viewMode === 'internal' && (
+                                          <span className="text-emerald-400 font-bold normal-case ml-2">
+                                            (มาร์กอัปหมวด: {((catSubtotal - catCostSubtotal) / (catCostSubtotal || 1) * 100).toFixed(0)}% | กำไร: ฿{catProfit.toLocaleString()})
                                           </span>
                                         )}
-                                        {item.carcassMaterial || item.surfaceMaterial || item.fittingBrand || item.accessories ? (
-                                          <div className="mt-1.5 space-y-1 bg-[#12131a]/60 border border-[#1f212d] p-2 rounded-xl text-[9px] print:bg-gray-55 print:border-gray-200">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1">
-                                              <div>
-                                                <span className="text-gray-500 font-semibold">โครงสร้าง:</span>{' '}
-                                                <span className="text-gray-300 print:text-black">{item.carcassMaterial || '-'}</span>
-                                              </div>
-                                              <div>
-                                                <span className="text-gray-500 font-semibold">ปิดผิว:</span>{' '}
-                                                <span className="text-gray-300 print:text-black">{item.surfaceMaterial || '-'}</span>
-                                              </div>
-                                              <div>
-                                                <span className="text-gray-500 font-semibold">ฟิตติ้ง:</span>{' '}
-                                                <span className="text-gray-300 print:text-black">{item.fittingBrand || '-'}</span>
-                                              </div>
-                                              <div>
-                                                <span className="text-gray-500 font-semibold">อุปกรณ์เสริม:</span>{' '}
-                                                <span className="text-gray-300 print:text-black">{item.accessories || '-'}</span>
-                                              </div>
+                                      </td>
+                                      <td className="py-2 text-right font-bold text-[9px] text-[#c5a880] print:text-black font-mono">
+                                        ฿{catSubtotal.toLocaleString()}
+                                      </td>
+                                      <td className="py-2 print:hidden"></td>
+                                    </tr>
+
+                                    {/* Items in this Category */}
+                                    {catItems.map(item => {
+                                      const hasSpecs = !!(item.carcassMaterial || item.surfaceMaterial || item.fittingBrand || item.accessories || item.specs);
+                                      const isSpecExpanded = expandedSpecs[item.id] === true;
+                                      const toggleSpec = () => {
+                                        setExpandedSpecs(prev => ({
+                                          ...prev,
+                                          [item.id]: !isSpecExpanded
+                                        }));
+                                      };
+
+                                      return (
+                                        <tr key={item.id} className="hover:bg-white/5 border-b border-[#1f212d]/10 transition-colors print:hover:bg-transparent print:border-gray-100">
+                                          <td className="py-3 pl-4 pr-4 border-l-2 border-[#1f212d] hover:border-[#c5a880]/30">
+                                            <div className="font-bold text-white print:text-black text-xs leading-tight">{item.name}</div>
+                                            
+                                            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                              {item.subCategory && (
+                                                <span className="inline-block text-[8px] font-bold bg-[#1c1d24]/80 text-[#c5a880] px-1.5 py-0.5 rounded border border-[#2d2f3d]/50 print:bg-gray-100 print:text-gray-600 print:border-gray-300">
+                                                  {item.subCategory}
+                                                </span>
+                                              )}
+                                              
+                                              {hasSpecs && (
+                                                <button
+                                                  type="button"
+                                                  onClick={toggleSpec}
+                                                  className="text-[8px] font-extrabold text-[#c5a880] bg-[#c5a880]/5 hover:bg-[#c5a880]/15 px-2 py-0.5 rounded border border-[#c5a880]/20 flex items-center gap-1 transition-all print:hidden"
+                                                >
+                                                  <span>{isSpecExpanded ? '▲ ซ่อนรายละเอียดสเปก' : '▼ ดูรายละเอียดสเปกวัสดุ'}</span>
+                                                </button>
+                                              )}
                                             </div>
-                                            {item.specs && (
-                                              <div className="border-t border-[#1f212d]/50 pt-1 mt-1 text-[8.5px] text-gray-400 italic">
-                                                <span className="text-gray-500 font-semibold">หมายเหตุ:</span> {item.specs}
+
+                                            {/* Spec Grid details - Collapsible */}
+                                            {hasSpecs && (
+                                              <div className={`mt-2 ${isSpecExpanded ? 'block' : 'hidden print:block'}`}>
+                                                {item.carcassMaterial || item.surfaceMaterial || item.fittingBrand || item.accessories ? (
+                                                  <div className="space-y-1.5 bg-[#12131a]/80 border border-[#1f212d] p-3 rounded-xl text-[9px] print:bg-gray-50 print:border-gray-200 shadow-inner">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5">
+                                                      <div className="flex justify-between md:justify-start gap-2 border-b border-[#1f212d]/40 pb-1 md:border-none md:pb-0">
+                                                        <span className="text-gray-500 font-semibold shrink-0">โครงสร้าง:</span>
+                                                        <span className="text-gray-300 print:text-black font-medium">{item.carcassMaterial || '-'}</span>
+                                                      </div>
+                                                      <div className="flex justify-between md:justify-start gap-2 border-b border-[#1f212d]/40 pb-1 md:border-none md:pb-0">
+                                                        <span className="text-gray-500 font-semibold shrink-0">การปิดผิว:</span>
+                                                        <span className="text-gray-300 print:text-black font-medium">{item.surfaceMaterial || '-'}</span>
+                                                      </div>
+                                                      <div className="flex justify-between md:justify-start gap-2 border-b border-[#1f212d]/40 pb-1 md:border-none md:pb-0">
+                                                        <span className="text-gray-500 font-semibold shrink-0">แบรนด์ฟิตติ้ง:</span>
+                                                        <span className="text-gray-300 print:text-black font-medium">{item.fittingBrand || '-'}</span>
+                                                      </div>
+                                                      <div className="flex justify-between md:justify-start gap-2 border-b border-[#1f212d]/40 pb-1 md:border-none md:pb-0">
+                                                        <span className="text-gray-500 font-semibold shrink-0">อุปกรณ์เสริม:</span>
+                                                        <span className="text-gray-300 print:text-black font-medium">{item.accessories || '-'}</span>
+                                                      </div>
+                                                    </div>
+                                                    {item.specs && (
+                                                      <div className="border-t border-[#1f212d]/60 pt-1.5 mt-1.5 text-[8.5px] text-gray-400 italic">
+                                                        <span className="text-gray-500 font-semibold">หมายเหตุเฉพาะรายการ:</span> {item.specs}
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                ) : (
+                                                  <div className="text-[9.5px] text-gray-400 bg-[#12131a]/80 border border-[#1f212d] p-3 rounded-xl print:text-black whitespace-pre-wrap shadow-inner leading-relaxed">
+                                                    {item.specs}
+                                                  </div>
+                                                )}
                                               </div>
                                             )}
-                                          </div>
-                                        ) : (
-                                          <div className="text-[9px] text-gray-500 print:text-gray-500 mt-1 leading-relaxed whitespace-pre-wrap">{item.specs}</div>
-                                        )}
-                                      </td>
-                                      <td className="py-3 text-center text-gray-400 print:text-black">{item.unit}</td>
-                                      <td className="py-3 text-center text-white print:text-black font-semibold font-mono">{item.quantity}</td>
-                                      {viewMode === 'internal' && (
-                                        <>
-                                          <td className="py-3 text-right text-gray-400 font-mono">฿{item.costPerUnit.toLocaleString()}</td>
-                                          <td className="py-3 text-right text-gray-400 font-mono">฿{(item.quantity * item.costPerUnit).toLocaleString()}</td>
-                                        </>
-                                      )}
-                                      <td className="py-3 text-right text-gray-300 print:text-black font-mono">฿{item.rate.toLocaleString()}</td>
-                                      <td className="py-3 text-right text-white print:text-black font-bold font-mono">฿{(item.quantity * item.rate).toLocaleString()}</td>
-                                      <td className="py-3 text-right print:hidden">
-                                        <div className="flex items-center justify-end gap-1">
-                                          <button 
-                                            onClick={() => openEditItemModal(item)}
-                                            className="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-white"
-                                          >
-                                            <Edit2 className="w-3 h-3" />
-                                          </button>
-                                          <button 
-                                            onClick={() => handleDeleteItem(item.id)}
-                                            className="p-1 rounded hover:bg-red-950/40 text-gray-400 hover:text-red-400"
-                                          >
-                                            <Trash2 className="w-3 h-3" />
-                                          </button>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </React.Fragment>
-                              );
-                            })}
-                          </tbody>
-                        </table>
+                                          </td>
+                                          <td className="py-3 text-center text-gray-400 print:text-black">{item.unit}</td>
+                                          <td className="py-3 text-center text-white print:text-black font-semibold font-mono">{item.quantity}</td>
+                                          {viewMode === 'internal' && (
+                                            <>
+                                              <td className="py-3 text-right text-gray-400 font-mono">฿{item.costPerUnit.toLocaleString()}</td>
+                                              <td className="py-3 text-right text-gray-400 font-mono">฿{(item.quantity * item.costPerUnit).toLocaleString()}</td>
+                                            </>
+                                          )}
+                                          <td className="py-3 text-right text-gray-300 print:text-black font-mono">฿{item.rate.toLocaleString()}</td>
+                                          <td className="py-3 text-right text-white print:text-black font-bold font-mono">฿{(item.quantity * item.rate).toLocaleString()}</td>
+                                          <td className="py-3 text-right print:hidden">
+                                            <div className="flex items-center justify-end gap-1">
+                                              <button 
+                                                onClick={() => openEditItemModal(item)}
+                                                className="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-white"
+                                              >
+                                                <Edit2 className="w-3 h-3" />
+                                              </button>
+                                              <button 
+                                                onClick={() => handleDeleteItem(item.id)}
+                                                className="p-1 rounded hover:bg-red-950/40 text-gray-400 hover:text-red-400"
+                                              >
+                                                <Trash2 className="w-3 h-3" />
+                                              </button>
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </React.Fragment>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        )}
                       </div>
                     );
                   })}
@@ -1287,269 +1468,389 @@ export default function BOQPage() {
       {/* ================= ADD ITEM TO BOQ MODAL ================= */}
       {isAddItemModalOpen && (
         <div className="fixed inset-0 z-40 flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm transition-opacity duration-300 animate-fadeIn p-0 md:p-4">
-          <div className="w-full max-w-2xl bg-[#12131a] border-t md:border border-[#1f212d] rounded-t-3xl md:rounded-2xl overflow-hidden shadow-2xl animate-slideUp md:animate-scaleUp pb-8 md:pb-0 max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-2xl bg-[#12131a] border-t md:border border-[#1f212d] rounded-t-3xl md:rounded-2xl overflow-hidden shadow-2xl animate-slideUp md:animate-scaleUp pb-8 md:pb-0 max-h-[90vh] flex flex-col">
             {/* Mobile Drag Indicator */}
-            <div className="w-12 h-1 bg-gray-700 rounded-full mx-auto my-3 block md:hidden" />
+            <div className="w-12 h-1 bg-gray-700 rounded-full mx-auto my-3 block md:hidden shrink-0" />
 
-            <div className="p-5 border-b border-[#1f212d] flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white tracking-wide">เพิ่มรายการสเปกบิวต์อินลง BOQ</h3>
-              <button onClick={() => setIsAddItemModalOpen(false)} className="text-gray-400 hover:text-white transition-colors">
+            <div className="p-5 border-b border-[#1f212d] flex items-center justify-between shrink-0">
+              <div>
+                <h3 className="text-sm font-bold text-white tracking-wide">เพิ่มรายการสเปกบิวต์อินลง BOQ</h3>
+                <p className="text-[10px] text-gray-400 mt-1">กำหนดประเภทงาน รายละเอียดสเปกวัสดุ และถอดราคาทีละขั้นตอน</p>
+              </div>
+              <button type="button" onClick={() => setIsAddItemModalOpen(false)} className="text-gray-400 hover:text-white transition-colors bg-[#1c1d24] p-1.5 rounded-lg border border-[#2d2f3d]">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
-              
-              {/* Template quick select section */}
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">เลือกด่วนจากสเปกเฟอร์นิเจอร์มาตรฐาน:</span>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-28 overflow-y-auto p-1.5 bg-[#1c1d24] border border-[#2d2f3d] rounded-xl scrollbar-thin">
-                  {FURNITURE_TEMPLATES.map((t, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleTemplateSelect(idx)}
-                      className="p-2 text-left rounded-lg bg-[#12131a] border border-[#1f212d] hover:border-[#c5a880]/40 text-[9px] text-gray-300 hover:text-white transition-all overflow-hidden truncate font-medium"
-                      title={t.name}
-                    >
-                      {t.name.split(' (')[0]}
-                    </button>
-                  ))}
-                </div>
+            {/* Stepper Navigation tabs */}
+            <div className="flex border-b border-[#1f212d]/60 bg-[#171821] px-4 pt-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setFormTab('info')}
+                className={`px-4 py-2 text-[10px] font-bold transition-all border-b-2 uppercase tracking-wider ${
+                  formTab === 'info'
+                    ? 'border-[#c5a880] text-[#c5a880]'
+                    : 'border-transparent text-gray-400 hover:text-white'
+                }`}
+              >
+                1. ข้อมูลทั่วไป
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!itemArea || !itemCategory || !itemSubCategory || !itemName) {
+                    showToast('กรุณากรอกข้อมูลทั่วไปให้ครบถ้วนก่อนสลับแท็บ', 'error');
+                    return;
+                  }
+                  setFormTab('specs');
+                }}
+                className={`px-4 py-2 text-[10px] font-bold transition-all border-b-2 uppercase tracking-wider ${
+                  formTab === 'specs'
+                    ? 'border-[#c5a880] text-[#c5a880]'
+                    : 'border-transparent text-gray-400 hover:text-white'
+                }`}
+              >
+                2. สเปกโครงสร้าง & ฟิตติ้ง
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!itemArea || !itemCategory || !itemSubCategory || !itemName) {
+                    showToast('กรุณากรอกข้อมูลทั่วไปให้ครบถ้วนก่อนสลับแท็บ', 'error');
+                    return;
+                  }
+                  setFormTab('pricing');
+                }}
+                className={`px-4 py-2 text-[10px] font-bold transition-all border-b-2 uppercase tracking-wider ${
+                  formTab === 'pricing'
+                    ? 'border-[#c5a880] text-[#c5a880]'
+                    : 'border-transparent text-gray-400 hover:text-white'
+                }`}
+              >
+                3. ปริมาณ & ราคา
+              </button>
+            </div>
+
+            <form onSubmit={handleAddItem} className="flex-1 overflow-y-auto flex flex-col">
+              <div className="p-5 space-y-4 flex-1">
+                
+                {/* STEP 1: General Info */}
+                {formTab === 'info' && (
+                  <div className="space-y-4 animate-fadeIn">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">พื้นที่ / ห้อง (Area) *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="เช่น Master Bedroom, Kitchen"
+                          value={itemArea}
+                          onChange={e => setItemArea(e.target.value)}
+                          className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#c5a880] transition-colors"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">หมวดหมู่เฟอร์นิเจอร์หลัก *</label>
+                        <select
+                          required
+                          value={itemCategory}
+                          onChange={e => {
+                            setItemCategory(e.target.value);
+                            const subs = FURNITURE_CATEGORIES[e.target.value] || [];
+                            setItemSubCategory(subs[0] || '');
+                          }}
+                          className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
+                        >
+                          <option value="" disabled>เลือกหมวดหลัก</option>
+                          {Object.keys(FURNITURE_CATEGORIES).map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">หมวดย่อยของเฟอร์นิเจอร์ *</label>
+                        <select
+                          required
+                          value={itemSubCategory}
+                          onChange={e => setItemSubCategory(e.target.value)}
+                          className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
+                        >
+                          <option value="" disabled>เลือกหมวดย่อย</option>
+                          {(FURNITURE_CATEGORIES[itemCategory] || []).map(sub => (
+                            <option key={sub} value={sub}>{sub}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">ชื่อรายการงาน *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="เช่น ตู้เสื้อผ้าบิวต์อิน ความสูงชนฝ้า"
+                          value={itemName}
+                          onChange={e => setItemName(e.target.value)}
+                          className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#c5a880] transition-colors"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 2: Material Specs */}
+                {formTab === 'specs' && (
+                  <div className="space-y-4 animate-fadeIn">
+                    {/* Template quick select */}
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">เลือกด่วนจากเทมเพลตสเปกมาตรฐาน:</span>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-28 overflow-y-auto p-2 bg-[#1c1d24] border border-[#2d2f3d] rounded-xl scrollbar-thin">
+                        {FURNITURE_TEMPLATES.map((t, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleTemplateSelect(idx)}
+                            className="p-2 text-left rounded-lg bg-[#12131a] border border-[#1f212d] hover:border-[#c5a880]/40 text-[9px] text-gray-300 hover:text-white transition-all overflow-hidden truncate font-medium"
+                            title={t.name}
+                          >
+                            {t.name.split(' (')[0]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 bg-[#1c1d24] p-4 rounded-xl border border-[#2d2f3d]">
+                      <div className="flex justify-between items-center pb-2 border-b border-[#2d2f3d]/50">
+                        <span className="text-[10px] font-bold text-[#c5a880] uppercase tracking-wider">สเปกโครงสร้าง & ฟิตติ้ง (Structured Specs)</span>
+                        <button
+                          type="button"
+                          onClick={() => setIsCatalogModalOpen(true)}
+                          className="text-[9px] font-extrabold text-[#c5a880] bg-[#c5a880]/10 border border-[#c5a880]/20 px-2 py-0.5 rounded-md hover:bg-[#c5a880]/20 transition-all flex items-center gap-1"
+                        >
+                          <Box className="w-3 h-3" />
+                          จัดการคลังวัสดุ
+                        </button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[9px] text-gray-400 block font-semibold">วัสดุโครงสร้าง (Carcass)</label>
+                          <select
+                            value={itemCarcass}
+                            onChange={e => setItemCarcass(e.target.value)}
+                            className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
+                          >
+                            <option value="">-- เลือกโครงสร้าง --</option>
+                            {(materialCatalog.carcass || []).map(mat => (
+                              <option key={mat} value={mat}>{mat}</option>
+                            ))}
+                            <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                          </select>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <label className="text-[9px] text-gray-400 block font-semibold">วัสดุปิดผิว (Surface)</label>
+                          <select
+                            value={itemSurface}
+                            onChange={e => setItemSurface(e.target.value)}
+                            className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
+                          >
+                            <option value="">-- เลือกการปิดผิว --</option>
+                            {(materialCatalog.surface || []).map(mat => (
+                              <option key={mat} value={mat}>{mat}</option>
+                            ))}
+                            <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] text-gray-400 block font-semibold">ฟิตติ้ง/บานพับ (Fittings)</label>
+                          <select
+                            value={itemFittings}
+                            onChange={e => setItemFittings(e.target.value)}
+                            className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
+                          >
+                            <option value="">-- เลือกฟิตติ้ง --</option>
+                            {(materialCatalog.fittings || []).map(mat => (
+                              <option key={mat} value={mat}>{mat}</option>
+                            ))}
+                            <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] text-gray-400 block font-semibold">อุปกรณ์เสริม (Accessories)</label>
+                          <select
+                            value={itemAccessories}
+                            onChange={e => setItemAccessories(e.target.value)}
+                            className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
+                          >
+                            <option value="">-- เลือกอุปกรณ์เสริม --</option>
+                            {(materialCatalog.accessories || []).map(mat => (
+                              <option key={mat} value={mat}>{mat}</option>
+                            ))}
+                            <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase">หมายเหตุสเปกเพิ่มเติม / สเปกแบบพิเศษ (Custom Specs)</label>
+                      <textarea
+                        rows={2}
+                        placeholder="กรอกสเปกเพิ่มเติมในกรณีที่มีคุณสมบัติเฉพาะกิจนอกเหนือจากตัวเลือกคลัง..."
+                        value={itemSpecs}
+                        onChange={e => setItemSpecs(e.target.value)}
+                        className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#c5a880] transition-colors"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3: Pricing & Quantity */}
+                {formTab === 'pricing' && (
+                  <div className="space-y-4 animate-fadeIn">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">จำนวน (Quantity) *</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          required
+                          min="0.1"
+                          value={itemQty}
+                          onChange={e => setItemQty(Number(e.target.value))}
+                          className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">หน่วยเรียก *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="เมตรวิ่ง, ตร.ม., จุด"
+                          value={itemUnit}
+                          onChange={e => setItemUnit(e.target.value)}
+                          className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">ราคาเสนอชำระ / หน่วย *</label>
+                        <input
+                          type="number"
+                          required
+                          value={itemRate}
+                          onChange={e => setItemRate(Number(e.target.value))}
+                          className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 bg-[#1c1d24] p-3.5 rounded-xl border border-[#2d2f3d]">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-[#c5a880] uppercase">ราคาทุนวัสดุ+ค่าแรง / หน่วย</label>
+                          <span className="text-[8px] text-gray-500 font-bold">เพื่อคำนวณกำไรช่าง</span>
+                        </div>
+                        <input
+                          type="number"
+                          placeholder="0"
+                          value={itemCost}
+                          onChange={e => setItemCost(Number(e.target.value))}
+                          className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
+                        />
+                      </div>
+
+                      <div className="space-y-1 flex flex-col justify-end">
+                        <div className="text-[10px] text-gray-400 flex items-center justify-between py-1 border-b border-[#2d2f3d]">
+                          <span>ราคารวมเสนอขายรายการนี้:</span>
+                          <strong className="text-white">฿{(itemQty * itemRate).toLocaleString()}</strong>
+                        </div>
+                        <div className="text-[10px] text-gray-500 flex items-center justify-between py-1">
+                          <span>ราคาทุนรวมช่าง:</span>
+                          <strong>฿{(itemQty * itemCost).toLocaleString()}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
               </div>
 
-              <form onSubmit={handleAddItem} className="space-y-4 pt-2">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1 col-span-2 sm:col-span-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">พื้นที่ / ห้อง (Area) *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="เช่น Master Bedroom, Kitchen"
-                      value={itemArea}
-                      onChange={e => setItemArea(e.target.value)}
-                      className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#c5a880] transition-colors"
-                    />
-                  </div>
-
-                  <div className="space-y-1 col-span-2 sm:col-span-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">หมวดหมู่เฟอร์นิเจอร์หลัก *</label>
-                    <select
-                      required
-                      value={itemCategory}
-                      onChange={e => {
-                        setItemCategory(e.target.value);
-                        const subs = FURNITURE_CATEGORIES[e.target.value] || [];
-                        setItemSubCategory(subs[0] || '');
-                      }}
-                      className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
-                    >
-                      <option value="" disabled>เลือกหมวดหลัก</option>
-                      {Object.keys(FURNITURE_CATEGORIES).map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-1 col-span-2 sm:col-span-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">หมวดย่อยของเฟอร์นิเจอร์ *</label>
-                    <select
-                      required
-                      value={itemSubCategory}
-                      onChange={e => setItemSubCategory(e.target.value)}
-                      className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
-                    >
-                      <option value="" disabled>เลือกหมวดย่อย</option>
-                      {(FURNITURE_CATEGORIES[itemCategory] || []).map(sub => (
-                        <option key={sub} value={sub}>{sub}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-1 col-span-2 sm:col-span-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">ชื่อรายการงาน *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="เช่น ตู้เสื้อผ้าบิวต์อิน ความสูงชนฝ้า"
-                      value={itemName}
-                      onChange={e => setItemName(e.target.value)}
-                      className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#c5a880] transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-3 bg-[#1c1d24] p-3.5 rounded-xl border border-[#2d2f3d]">
-                  <div className="flex justify-between items-center pb-2 border-b border-[#2d2f3d]/50">
-                    <span className="text-[10px] font-bold text-[#c5a880] uppercase tracking-wider">สเปกโครงสร้าง & ฟิตติ้ง (Structured Specs)</span>
+              {/* Wizard Footer buttons */}
+              <div className="p-4 border-t border-[#1f212d] bg-[#12131a] flex gap-3 shrink-0">
+                {formTab === 'info' && (
+                  <>
                     <button
                       type="button"
-                      onClick={() => setIsCatalogModalOpen(true)}
-                      className="text-[9px] font-extrabold text-[#c5a880] bg-[#c5a880]/10 border border-[#c5a880]/20 px-2 py-0.5 rounded-md hover:bg-[#c5a880]/20 transition-all flex items-center gap-1"
+                      onClick={() => setIsAddItemModalOpen(false)}
+                      className="w-1/3 bg-[#1c1d24] hover:bg-[#252731] border border-[#2d2f3d] text-gray-300 font-bold py-2.5 rounded-xl text-xs transition-colors"
                     >
-                      <Box className="w-3 h-3" />
-                      จัดการคลังวัสดุ
+                      ยกเลิก
                     </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-[9px] text-gray-400 block font-semibold">วัสดุโครงสร้าง (Carcass)</label>
-                      <select
-                        value={itemCarcass}
-                        onChange={e => setItemCarcass(e.target.value)}
-                        className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
-                      >
-                        <option value="">-- เลือกโครงสร้าง --</option>
-                        {(materialCatalog.carcass || []).map(mat => (
-                          <option key={mat} value={mat}>{mat}</option>
-                        ))}
-                        <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
-                      </select>
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <label className="text-[9px] text-gray-400 block font-semibold">วัสดุปิดผิว (Surface)</label>
-                      <select
-                        value={itemSurface}
-                        onChange={e => setItemSurface(e.target.value)}
-                        className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
-                      >
-                        <option value="">-- เลือกการปิดผิว --</option>
-                        {(materialCatalog.surface || []).map(mat => (
-                          <option key={mat} value={mat}>{mat}</option>
-                        ))}
-                        <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
-                      </select>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!itemArea || !itemCategory || !itemSubCategory || !itemName) {
+                          showToast('กรุณากรอกข้อมูลทั่วไปให้ครบถ้วนก่อนไปขั้นตอนถัดไป', 'error');
+                          return;
+                        }
+                        setFormTab('specs');
+                      }}
+                      className="flex-1 bg-gradient-to-r from-[#d4af37] to-[#c5a880] text-black font-extrabold py-2.5 rounded-xl text-xs hover:opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-md shadow-[#d4af37]/10"
+                    >
+                      <span>ขั้นตอนถัดไป (สเปกวัสดุ)</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
 
-                    <div className="space-y-1">
-                      <label className="text-[9px] text-gray-400 block font-semibold">ฟิตติ้ง/บานพับ (Fittings)</label>
-                      <select
-                        value={itemFittings}
-                        onChange={e => setItemFittings(e.target.value)}
-                        className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
-                      >
-                        <option value="">-- เลือกฟิตติ้ง --</option>
-                        {(materialCatalog.fittings || []).map(mat => (
-                          <option key={mat} value={mat}>{mat}</option>
-                        ))}
-                        <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
-                      </select>
-                    </div>
+                {formTab === 'specs' && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setFormTab('info')}
+                      className="w-1/3 bg-[#1c1d24] hover:bg-[#252731] border border-[#2d2f3d] text-gray-300 font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>ย้อนกลับ</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormTab('pricing')}
+                      className="flex-1 bg-gradient-to-r from-[#d4af37] to-[#c5a880] text-black font-extrabold py-2.5 rounded-xl text-xs hover:opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-md shadow-[#d4af37]/10"
+                    >
+                      <span>ขั้นตอนถัดไป (ปริมาณ & ราคา)</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
 
-                    <div className="space-y-1">
-                      <label className="text-[9px] text-gray-400 block font-semibold">อุปกรณ์เสริม (Accessories)</label>
-                      <select
-                        value={itemAccessories}
-                        onChange={e => setItemAccessories(e.target.value)}
-                        className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
-                      >
-                        <option value="">-- เลือกอุปกรณ์เสริม --</option>
-                        {(materialCatalog.accessories || []).map(mat => (
-                          <option key={mat} value={mat}>{mat}</option>
-                        ))}
-                        <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">หมายเหตุสเปกเพิ่มเติม / สเปกแบบพิเศษ (Custom Specs)</label>
-                  <textarea
-                    rows={2}
-                    placeholder="กรอกสเปกเพิ่มเติมในกรณีที่มีคุณสมบัติเฉพาะกิจนอกเหนือจากตัวเลือกคลัง..."
-                    value={itemSpecs}
-                    onChange={e => setItemSpecs(e.target.value)}
-                    className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#c5a880] transition-colors"
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">จำนวน (Quantity) *</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      required
-                      min="0.1"
-                      value={itemQty}
-                      onChange={e => setItemQty(Number(e.target.value))}
-                      className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">หน่วยเรียก *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="เมตรวิ่ง, ตร.ม., จุด"
-                      value={itemUnit}
-                      onChange={e => setItemUnit(e.target.value)}
-                      className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">ราคาเสนอชำระ / หน่วย *</label>
-                    <input
-                      type="number"
-                      required
-                      value={itemRate}
-                      onChange={e => setItemRate(Number(e.target.value))}
-                      className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 bg-[#1c1d24] p-3.5 rounded-xl border border-[#2d2f3d]">
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-bold text-[#c5a880] uppercase">ราคาทุนวัสดุ+ค่าแรง / หน่วย</label>
-                      <span className="text-[8px] text-gray-500 font-bold">เพื่อคำนวณกำไรช่าง</span>
-                    </div>
-                    <input
-                      type="number"
-                      placeholder="0"
-                      value={itemCost}
-                      onChange={e => setItemCost(Number(e.target.value))}
-                      className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
-                    />
-                  </div>
-
-                  <div className="space-y-1 flex flex-col justify-end">
-                    <div className="text-[10px] text-gray-400 flex items-center justify-between py-1 border-b border-[#2d2f3d]">
-                      <span>ราคารวมเสนอขายรายการนี้:</span>
-                      <strong className="text-white">฿{(itemQty * itemRate).toLocaleString()}</strong>
-                    </div>
-                    <div className="text-[10px] text-gray-500 flex items-center justify-between py-1">
-                      <span>ราคาทุนรวมช่าง:</span>
-                      <strong>฿{(itemQty * itemCost).toLocaleString()}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-3 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsAddItemModalOpen(false)}
-                    className="w-1/2 bg-[#1c1d24] hover:bg-[#252731] border border-[#2d2f3d] text-gray-300 font-bold py-2.5 rounded-xl text-xs transition-colors"
-                  >
-                    ยกเลิก
-                  </button>
-                  <button
-                    type="submit"
-                    className="w-1/2 bg-gradient-to-r from-[#d4af37] to-[#c5a880] text-black font-bold py-2.5 rounded-xl text-xs hover:opacity-90 transition-all flex items-center justify-center gap-1.5"
-                  >
-                    <Calculator className="w-3.5 h-3.5" />
-                    <span>คำนวณและเพิ่มรายการ</span>
-                  </button>
-                </div>
-              </form>
-
-            </div>
+                {formTab === 'pricing' && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setFormTab('specs')}
+                      className="w-1/3 bg-[#1c1d24] hover:bg-[#252731] border border-[#2d2f3d] text-gray-300 font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>ย้อนกลับ</span>
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 bg-gradient-to-r from-[#d4af37] to-[#c5a880] text-black font-extrabold py-2.5 rounded-xl text-xs hover:opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-md shadow-[#d4af37]/15"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>บันทึกและเพิ่มรายการ</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -1557,237 +1858,387 @@ export default function BOQPage() {
       {/* ================= EDIT ITEM IN BOQ MODAL ================= */}
       {isEditItemModalOpen && editingItem && (
         <div className="fixed inset-0 z-40 flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm transition-opacity duration-300 animate-fadeIn p-0 md:p-4">
-          <div className="w-full max-w-2xl bg-[#12131a] border-t md:border border-[#1f212d] rounded-t-3xl md:rounded-2xl overflow-hidden shadow-2xl animate-slideUp md:animate-scaleUp pb-8 md:pb-0 max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-2xl bg-[#12131a] border-t md:border border-[#1f212d] rounded-t-3xl md:rounded-2xl overflow-hidden shadow-2xl animate-slideUp md:animate-scaleUp pb-8 md:pb-0 max-h-[90vh] flex flex-col">
             {/* Mobile Drag Indicator */}
-            <div className="w-12 h-1 bg-gray-700 rounded-full mx-auto my-3 block md:hidden" />
+            <div className="w-12 h-1 bg-gray-700 rounded-full mx-auto my-3 block md:hidden shrink-0" />
 
-            <div className="p-5 border-b border-[#1f212d] flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white tracking-wide">แก้ไขรายการสเปกบิวต์อิน</h3>
-              <button onClick={() => setIsEditItemModalOpen(false)} className="text-gray-400 hover:text-white transition-colors">
+            <div className="p-5 border-b border-[#1f212d] flex items-center justify-between shrink-0">
+              <div>
+                <h3 className="text-sm font-bold text-white tracking-wide">แก้ไขรายการสเปกบิวต์อิน</h3>
+                <p className="text-[10px] text-gray-400 mt-1">แก้ไขประเภทงาน สเปกวัสดุ หรือราคาและจำนวนตามต้องการ</p>
+              </div>
+              <button type="button" onClick={() => setIsEditItemModalOpen(false)} className="text-gray-400 hover:text-white transition-colors bg-[#1c1d24] p-1.5 rounded-lg border border-[#2d2f3d]">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveEditItem} className="p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1 col-span-2 sm:col-span-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">พื้นที่ / ห้อง (Area) *</label>
-                  <input
-                    type="text"
-                    required
-                    value={itemArea}
-                    onChange={e => setItemArea(e.target.value)}
-                    className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
-                  />
-                </div>
+            {/* Stepper Navigation tabs */}
+            <div className="flex border-b border-[#1f212d]/60 bg-[#171821] px-4 pt-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setFormTab('info')}
+                className={`px-4 py-2 text-[10px] font-bold transition-all border-b-2 uppercase tracking-wider ${
+                  formTab === 'info'
+                    ? 'border-[#c5a880] text-[#c5a880]'
+                    : 'border-transparent text-gray-400 hover:text-white'
+                }`}
+              >
+                1. ข้อมูลทั่วไป
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!itemArea || !itemCategory || !itemSubCategory || !itemName) {
+                    showToast('กรุณากรอกข้อมูลทั่วไปให้ครบถ้วนก่อนสลับแท็บ', 'error');
+                    return;
+                  }
+                  setFormTab('specs');
+                }}
+                className={`px-4 py-2 text-[10px] font-bold transition-all border-b-2 uppercase tracking-wider ${
+                  formTab === 'specs'
+                    ? 'border-[#c5a880] text-[#c5a880]'
+                    : 'border-transparent text-gray-400 hover:text-white'
+                }`}
+              >
+                2. สเปกโครงสร้าง & ฟิตติ้ง
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!itemArea || !itemCategory || !itemSubCategory || !itemName) {
+                    showToast('กรุณากรอกข้อมูลทั่วไปให้ครบถ้วนก่อนสลับแท็บ', 'error');
+                    return;
+                  }
+                  setFormTab('pricing');
+                }}
+                className={`px-4 py-2 text-[10px] font-bold transition-all border-b-2 uppercase tracking-wider ${
+                  formTab === 'pricing'
+                    ? 'border-[#c5a880] text-[#c5a880]'
+                    : 'border-transparent text-gray-400 hover:text-white'
+                }`}
+              >
+                3. ปริมาณ & ราคา
+              </button>
+            </div>
 
-                <div className="space-y-1 col-span-2 sm:col-span-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">หมวดหมู่เฟอร์นิเจอร์หลัก *</label>
-                  <select
-                    required
-                    value={itemCategory}
-                    onChange={e => {
-                      setItemCategory(e.target.value);
-                      const subs = FURNITURE_CATEGORIES[e.target.value] || [];
-                      setItemSubCategory(subs[0] || '');
-                    }}
-                    className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
-                  >
-                    <option value="" disabled>เลือกหมวดหลัก</option>
-                    {Object.keys(FURNITURE_CATEGORIES).map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1 col-span-2 sm:col-span-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">หมวดย่อยของเฟอร์นิเจอร์ *</label>
-                  <select
-                    required
-                    value={itemSubCategory}
-                    onChange={e => setItemSubCategory(e.target.value)}
-                    className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
-                  >
-                    <option value="" disabled>เลือกหมวดย่อย</option>
-                    {(FURNITURE_CATEGORIES[itemCategory] || []).map(sub => (
-                      <option key={sub} value={sub}>{sub}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1 col-span-2 sm:col-span-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">ชื่อรายการงาน *</label>
-                  <input
-                    type="text"
-                    required
-                    value={itemName}
-                    onChange={e => setItemName(e.target.value)}
-                    className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3 bg-[#1c1d24] p-3.5 rounded-xl border border-[#2d2f3d]">
-                <div className="flex justify-between items-center pb-2 border-b border-[#2d2f3d]/50">
-                  <span className="text-[10px] font-bold text-[#c5a880] uppercase tracking-wider">สเปกโครงสร้าง & ฟิตติ้ง (Structured Specs)</span>
-                  <button
-                    type="button"
-                    onClick={() => setIsCatalogModalOpen(true)}
-                    className="text-[9px] font-extrabold text-[#c5a880] bg-[#c5a880]/10 border border-[#c5a880]/20 px-2 py-0.5 rounded-md hover:bg-[#c5a880]/20 transition-all flex items-center gap-1"
-                  >
-                    <Box className="w-3 h-3" />
-                    จัดการคลังวัสดุ
-                  </button>
-                </div>
+            <form onSubmit={handleSaveEditItem} className="flex-1 overflow-y-auto flex flex-col">
+              <div className="p-5 space-y-4 flex-1">
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[9px] text-gray-400 block font-semibold">วัสดุโครงสร้าง (Carcass)</label>
-                    <select
-                      value={itemCarcass}
-                      onChange={e => setItemCarcass(e.target.value)}
-                      className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
-                    >
-                      <option value="">-- เลือกโครงสร้าง --</option>
-                      {(materialCatalog.carcass || []).map(mat => (
-                        <option key={mat} value={mat}>{mat}</option>
-                      ))}
-                      <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
-                    </select>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <label className="text-[9px] text-gray-400 block font-semibold">วัสดุปิดผิว (Surface)</label>
-                    <select
-                      value={itemSurface}
-                      onChange={e => setItemSurface(e.target.value)}
-                      className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
-                    >
-                      <option value="">-- เลือกการปิดผิว --</option>
-                      {(materialCatalog.surface || []).map(mat => (
-                        <option key={mat} value={mat}>{mat}</option>
-                      ))}
-                      <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
-                    </select>
-                  </div>
+                {/* STEP 1: General Info */}
+                {formTab === 'info' && (
+                  <div className="space-y-4 animate-fadeIn">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">พื้นที่ / ห้อง (Area) *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="เช่น Master Bedroom, Kitchen"
+                          value={itemArea}
+                          onChange={e => setItemArea(e.target.value)}
+                          className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#c5a880] transition-colors"
+                        />
+                      </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[9px] text-gray-400 block font-semibold">ฟิตติ้ง/บานพับ (Fittings)</label>
-                    <select
-                      value={itemFittings}
-                      onChange={e => setItemFittings(e.target.value)}
-                      className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
-                    >
-                      <option value="">-- เลือกฟิตติ้ง --</option>
-                      {(materialCatalog.fittings || []).map(mat => (
-                        <option key={mat} value={mat}>{mat}</option>
-                      ))}
-                      <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
-                    </select>
-                  </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">หมวดหมู่เฟอร์นิเจอร์หลัก *</label>
+                        <select
+                          required
+                          value={itemCategory}
+                          onChange={e => {
+                            setItemCategory(e.target.value);
+                            const subs = FURNITURE_CATEGORIES[e.target.value] || [];
+                            setItemSubCategory(subs[0] || '');
+                          }}
+                          className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
+                        >
+                          <option value="" disabled>เลือกหมวดหลัก</option>
+                          {Object.keys(FURNITURE_CATEGORIES).map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[9px] text-gray-400 block font-semibold">อุปกรณ์เสริม (Accessories)</label>
-                    <select
-                      value={itemAccessories}
-                      onChange={e => setItemAccessories(e.target.value)}
-                      className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
-                    >
-                      <option value="">-- เลือกอุปกรณ์เสริม --</option>
-                      {(materialCatalog.accessories || []).map(mat => (
-                        <option key={mat} value={mat}>{mat}</option>
-                      ))}
-                      <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
-                    </select>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">หมวดย่อยของเฟอร์นิเจอร์ *</label>
+                        <select
+                          required
+                          value={itemSubCategory}
+                          onChange={e => setItemSubCategory(e.target.value)}
+                          className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
+                        >
+                          <option value="" disabled>เลือกหมวดย่อย</option>
+                          {(FURNITURE_CATEGORIES[itemCategory] || []).map(sub => (
+                            <option key={sub} value={sub}>{sub}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">ชื่อรายการงาน *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="เช่น ตู้เสื้อผ้าบิวต์อิน ความสูงชนฝ้า"
+                          value={itemName}
+                          onChange={e => setItemName(e.target.value)}
+                          className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#c5a880] transition-colors"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* STEP 2: Material Specs */}
+                {formTab === 'specs' && (
+                  <div className="space-y-4 animate-fadeIn">
+                    {/* Template quick select */}
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">เลือกด่วนจากเทมเพลตสเปกมาตรฐาน:</span>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-28 overflow-y-auto p-2 bg-[#1c1d24] border border-[#2d2f3d] rounded-xl scrollbar-thin">
+                        {FURNITURE_TEMPLATES.map((t, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleTemplateSelect(idx)}
+                            className="p-2 text-left rounded-lg bg-[#12131a] border border-[#1f212d] hover:border-[#c5a880]/40 text-[9px] text-gray-300 hover:text-white transition-all overflow-hidden truncate font-medium"
+                            title={t.name}
+                          >
+                            {t.name.split(' (')[0]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 bg-[#1c1d24] p-4 rounded-xl border border-[#2d2f3d]">
+                      <div className="flex justify-between items-center pb-2 border-b border-[#2d2f3d]/50">
+                        <span className="text-[10px] font-bold text-[#c5a880] uppercase tracking-wider">สเปกโครงสร้าง & ฟิตติ้ง (Structured Specs)</span>
+                        <button
+                          type="button"
+                          onClick={() => setIsCatalogModalOpen(true)}
+                          className="text-[9px] font-extrabold text-[#c5a880] bg-[#c5a880]/10 border border-[#c5a880]/20 px-2 py-0.5 rounded-md hover:bg-[#c5a880]/20 transition-all flex items-center gap-1"
+                        >
+                          <Box className="w-3 h-3" />
+                          จัดการคลังวัสดุ
+                        </button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[9px] text-gray-400 block font-semibold">วัสดุโครงสร้าง (Carcass)</label>
+                          <select
+                            value={itemCarcass}
+                            onChange={e => setItemCarcass(e.target.value)}
+                            className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
+                          >
+                            <option value="">-- เลือกโครงสร้าง --</option>
+                            {(materialCatalog.carcass || []).map(mat => (
+                              <option key={mat} value={mat}>{mat}</option>
+                            ))}
+                            <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                          </select>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <label className="text-[9px] text-gray-400 block font-semibold">วัสดุปิดผิว (Surface)</label>
+                          <select
+                            value={itemSurface}
+                            onChange={e => setItemSurface(e.target.value)}
+                            className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
+                          >
+                            <option value="">-- เลือกการปิดผิว --</option>
+                            {(materialCatalog.surface || []).map(mat => (
+                              <option key={mat} value={mat}>{mat}</option>
+                            ))}
+                            <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] text-gray-400 block font-semibold">ฟิตติ้ง/บานพับ (Fittings)</label>
+                          <select
+                            value={itemFittings}
+                            onChange={e => setItemFittings(e.target.value)}
+                            className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
+                          >
+                            <option value="">-- เลือกฟิตติ้ง --</option>
+                            {(materialCatalog.fittings || []).map(mat => (
+                              <option key={mat} value={mat}>{mat}</option>
+                            ))}
+                            <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] text-gray-400 block font-semibold">อุปกรณ์เสริม (Accessories)</label>
+                          <select
+                            value={itemAccessories}
+                            onChange={e => setItemAccessories(e.target.value)}
+                            className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
+                          >
+                            <option value="">-- เลือกอุปกรณ์เสริม --</option>
+                            {(materialCatalog.accessories || []).map(mat => (
+                              <option key={mat} value={mat}>{mat}</option>
+                            ))}
+                            <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase">หมายเหตุสเปกเพิ่มเติม / สเปกแบบพิเศษ (Custom Specs)</label>
+                      <textarea
+                        rows={2}
+                        placeholder="กรอกสเปกเพิ่มเติมในกรณีที่มีคุณสมบัติเฉพาะกิจนอกเหนือจากตัวเลือกคลัง..."
+                        value={itemSpecs}
+                        onChange={e => setItemSpecs(e.target.value)}
+                        className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#c5a880] transition-colors"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3: Pricing & Quantity */}
+                {formTab === 'pricing' && (
+                  <div className="space-y-4 animate-fadeIn">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">จำนวน (Quantity) *</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          required
+                          min="0.1"
+                          value={itemQty}
+                          onChange={e => setItemQty(Number(e.target.value))}
+                          className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">หน่วยเรียก *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="เมตรวิ่ง, ตร.ม., จุด"
+                          value={itemUnit}
+                          onChange={e => setItemUnit(e.target.value)}
+                          className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase">ราคาเสนอชำระ / หน่วย *</label>
+                        <input
+                          type="number"
+                          required
+                          value={itemRate}
+                          onChange={e => setItemRate(Number(e.target.value))}
+                          className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 bg-[#1c1d24] p-3.5 rounded-xl border border-[#2d2f3d]">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-[#c5a880] uppercase">ราคาทุนวัสดุ+ค่าแรง / หน่วย</label>
+                          <span className="text-[8px] text-gray-500 font-bold">เพื่อคำนวณกำไรช่าง</span>
+                        </div>
+                        <input
+                          type="number"
+                          placeholder="0"
+                          value={itemCost}
+                          onChange={e => setItemCost(Number(e.target.value))}
+                          className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
+                        />
+                      </div>
+
+                      <div className="space-y-1 flex flex-col justify-end">
+                        <div className="text-[10px] text-gray-400 flex items-center justify-between py-1 border-b border-[#2d2f3d]">
+                          <span>ราคารวมเสนอขายรายการนี้:</span>
+                          <strong className="text-white">฿{(itemQty * itemRate).toLocaleString()}</strong>
+                        </div>
+                        <div className="text-[10px] text-gray-500 flex items-center justify-between py-1">
+                          <span>ราคาทุนรวมช่าง:</span>
+                          <strong>฿{(itemQty * itemCost).toLocaleString()}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase">หมายเหตุสเปกเพิ่มเติม / สเปกแบบพิเศษ (Custom Specs)</label>
-                <textarea
-                  rows={2}
-                  value={itemSpecs}
-                  onChange={e => setItemSpecs(e.target.value)}
-                  className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#c5a880] transition-colors"
-                />
-              </div>
+              {/* Wizard Footer buttons */}
+              <div className="p-4 border-t border-[#1f212d] bg-[#12131a] flex gap-3 shrink-0">
+                {formTab === 'info' && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditItemModalOpen(false)}
+                      className="w-1/3 bg-[#1c1d24] hover:bg-[#252731] border border-[#2d2f3d] text-gray-300 font-bold py-2.5 rounded-xl text-xs transition-colors"
+                    >
+                      ยกเลิก
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!itemArea || !itemCategory || !itemSubCategory || !itemName) {
+                          showToast('กรุณากรอกข้อมูลทั่วไปให้ครบถ้วนก่อนไปขั้นตอนถัดไป', 'error');
+                          return;
+                        }
+                        setFormTab('specs');
+                      }}
+                      className="flex-1 bg-gradient-to-r from-[#d4af37] to-[#c5a880] text-black font-extrabold py-2.5 rounded-xl text-xs hover:opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-md shadow-[#d4af37]/10"
+                    >
+                      <span>ขั้นตอนถัดไป (สเปกวัสดุ)</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">จำนวน (Quantity) *</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    required
-                    min="0.1"
-                    value={itemQty}
-                    onChange={e => setItemQty(Number(e.target.value))}
-                    className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
-                  />
-                </div>
+                {formTab === 'specs' && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setFormTab('info')}
+                      className="w-1/3 bg-[#1c1d24] hover:bg-[#252731] border border-[#2d2f3d] text-gray-300 font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>ย้อนกลับ</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormTab('pricing')}
+                      className="flex-1 bg-gradient-to-r from-[#d4af37] to-[#c5a880] text-black font-extrabold py-2.5 rounded-xl text-xs hover:opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-md shadow-[#d4af37]/10"
+                    >
+                      <span>ขั้นตอนถัดไป (ปริมาณ & ราคา)</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
 
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">หน่วยเรียก *</label>
-                  <input
-                    type="text"
-                    required
-                    value={itemUnit}
-                    onChange={e => setItemUnit(e.target.value)}
-                    className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">ราคาเสนอชำระ / หน่วย *</label>
-                  <input
-                    type="number"
-                    required
-                    value={itemRate}
-                    onChange={e => setItemRate(Number(e.target.value))}
-                    className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 bg-[#1c1d24] p-3.5 rounded-xl border border-[#2d2f3d]">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#c5a880] uppercase">ราคาทุนวัสดุ+ค่าแรง / หน่วย</label>
-                  <input
-                    type="number"
-                    value={itemCost}
-                    onChange={e => setItemCost(Number(e.target.value))}
-                    className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
-                  />
-                </div>
-
-                <div className="space-y-1 flex flex-col justify-end text-[10px]">
-                  <div className="text-gray-400 flex items-center justify-between py-1 border-b border-[#2d2f3d]">
-                    <span>ราคารวมเสนอขายรายการนี้:</span>
-                    <strong className="text-white">฿{(itemQty * itemRate).toLocaleString()}</strong>
-                  </div>
-                  <div className="text-gray-500 flex items-center justify-between py-1">
-                    <span>ราคาทุนรวมช่าง:</span>
-                    <strong>฿{(itemQty * itemCost).toLocaleString()}</strong>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-3 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsEditItemModalOpen(false)}
-                  className="w-1/2 bg-[#1c1d24] hover:bg-[#252731] border border-[#2d2f3d] text-gray-300 font-bold py-2.5 rounded-xl text-xs transition-colors"
-                >
-                  ยกเลิก
-                </button>
-                <button
-                  type="submit"
-                  className="w-1/2 bg-gradient-to-r from-[#d4af37] to-[#c5a880] text-black font-bold py-2.5 rounded-xl text-xs hover:opacity-90 transition-all flex items-center justify-center gap-1.5"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  <span>บันทึกการแก้ไข</span>
-                </button>
+                {formTab === 'pricing' && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setFormTab('specs')}
+                      className="w-1/3 bg-[#1c1d24] hover:bg-[#252731] border border-[#2d2f3d] text-gray-300 font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>ย้อนกลับ</span>
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 bg-gradient-to-r from-[#d4af37] to-[#c5a880] text-black font-extrabold py-2.5 rounded-xl text-xs hover:opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-md shadow-[#d4af37]/15"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>บันทึกการแก้ไข</span>
+                    </button>
+                  </>
+                )}
               </div>
             </form>
           </div>
