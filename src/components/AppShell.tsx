@@ -57,7 +57,7 @@ export default function AppShell({ children }: AppShellProps) {
   };
 
   return (
-    <div className="flex h-screen bg-luxury-bg overflow-hidden text-gray-200">
+    <div className="flex h-screen bg-transparent overflow-hidden text-gray-200">
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:flex flex-col w-64 bg-[#0a0b10] border-r border-[#1a1c26] shrink-0">
         {/* Brand Logo */}
@@ -166,7 +166,7 @@ export default function AppShell({ children }: AppShellProps) {
       {/* Main Container */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-[#0a0b10] border-b border-[#1a1c26] flex items-center justify-between px-6 shrink-0 z-30 shadow-sm">
+        <header className="h-16 bg-[#0a0b10]/85 backdrop-blur-md border-b border-[#1a1c26] flex items-center justify-between px-6 shrink-0 z-30 shadow-sm">
           <div className="flex items-center gap-4">
             {/* Mobile Menu Toggle */}
             <button 
@@ -261,7 +261,7 @@ export default function AppShell({ children }: AppShellProps) {
         </header>
 
         {/* Content Area - bottom padding added on mobile to prevent bottom nav overlay */}
-        <main className="flex-1 overflow-y-auto bg-luxury-bg relative scrollbar-thin pb-20 lg:pb-0">
+        <main className="flex-1 overflow-y-auto bg-transparent relative scrollbar-thin pb-20 lg:pb-0">
           {children}
         </main>
       </div>
