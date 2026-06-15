@@ -28,7 +28,10 @@ import {
   Settings,
   Info,
   Clock,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2
 } from 'lucide-react';
 import { mockProjects, mockTasks, mockTimelineEvents, mockUsers } from '@/lib/mockData';
 import { Project, Task, TimelineEvent, ProjectStatus } from '@/lib/types';
@@ -43,7 +46,7 @@ export default function ProjectDetail() {
   const project = mockProjects.find(p => p.id === projectId) || mockProjects[0];
 
   // Active tab state
-  const [activeTab, setActiveTab] = useState<'overview' | 'timeline' | 'tasks' | 'photos' | 'files' | 'team' | 'budget' | 'ai' | 'reports'>('timeline');
+  const [activeTab, setActiveTab] = useState<'overview' | 'timeline' | 'tasks' | 'photos' | 'files' | 'team' | 'budget' | 'ai' | 'reports'>('photos');
 
   // Interactive timeline state
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>(
@@ -65,14 +68,9 @@ export default function ProjectDetail() {
   const [lineGroupIdState, setLineGroupIdState] = useState(project.lineGroupId || '');
   const [showSaveToast, setShowSaveToast] = useState(false);
 
-  const handleSaveLineGroupId = (e: React.FormEvent) => {
-    e.preventDefault();
-    project.lineGroupId = lineGroupIdState;
-    setShowSaveToast(true);
-    setTimeout(() => {
-      setShowSaveToast(false);
-    }, 3000);
-  };
+  // Photos gallery lightbox states
+  const [projectPhotos, setProjectPhotos] = useState<{ url: string; title: string; desc: string; area: string }[]>([]);
+  const [lightboxPhoto, setLightboxPhoto] = useState<{ url: string; title: string; desc: string; area: string } | null>(null);
 
   // Load timeline events and photos from Supabase
   const [supabaseEvents, setSupabaseEvents] = useState<TimelineEvent[]>([]);
@@ -101,6 +99,120 @@ export default function ProjectDetail() {
     dbProjects: [],
     networkCheck: 'Checking network...'
   });
+
+  const handlePrevPhoto = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!lightboxPhoto) return;
+    const idx = projectPhotos.findIndex(p => p.url === lightboxPhoto.url);
+    if (idx > 0) {
+      setLightboxPhoto(projectPhotos[idx - 1]);
+    } else {
+      setLightboxPhoto(projectPhotos[projectPhotos.length - 1]);
+    }
+  };
+
+  const handleNextPhoto = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!lightboxPhoto) return;
+    const idx = projectPhotos.findIndex(p => p.url === lightboxPhoto.url);
+    if (idx < projectPhotos.length - 1) {
+      setLightboxPhoto(projectPhotos[idx + 1]);
+    } else {
+      setLightboxPhoto(projectPhotos[0]);
+    }
+  };
+
+  // Populate project photos dynamically
+  useEffect(() => {
+    const saved = localStorage.getItem('pp_built_in_portfolio');
+    let items = [];
+    if (saved) {
+      try {
+        items = JSON.parse(saved);
+      } catch (e) {}
+    }
+    
+    const matchingPortfolio = items.filter((item: any) => item.projectId === project.id);
+    const portfolioPhotos = matchingPortfolio.map((item: any) => ({
+      url: item.imageUrl,
+      title: item.title,
+      desc: item.description,
+      area: item.area || 'ผลงานบิวต์อิน'
+    }));
+
+    const defaultPhotos = [
+      {
+        url: project.coverUrl || '/images/kitchen.png',
+        title: `ภาพหน้าปกโครงการ ${project.name}`,
+        desc: `ภาพจำลอง/ภาพถ่ายจริงหน้าปกของโครงการ ${project.name}`,
+        area: 'หน้าปกโครงการ'
+      }
+    ];
+
+    if (project.id === 'p1') {
+      defaultPhotos.push(
+        {
+          url: '/images/kitchen.png',
+          title: 'ชุดครัวบิวต์อินหรูหรา',
+          desc: 'งานติดตั้งโครงตู้ครัวกันชื้นพร้อมหน้าบานกระจกเงาชาทอง',
+          area: 'ห้องครัว (Kitchen)'
+        },
+        {
+          url: '/images/luxury_walkin_closet.png',
+          title: 'ตู้เสื้อผ้า Walk-in Closet',
+          desc: 'งานประกอบโครงตู้เสื้อผ้าไม้จริงสีเข้มและกระจกใสนิรภัย',
+          area: 'ห้องนอน (Bedroom)'
+        }
+      );
+    } else if (project.id === 'p2') {
+      defaultPhotos.push(
+        {
+          url: '/images/luxury_walkin_closet.png',
+          title: 'หน้าบานเลื่อนและบานพับตู้เสื้อผ้า',
+          desc: 'บานเลื่อนอลูมิเนียมเกรดพรีเมียมสีทองแชมเปญพร้อมไฟ LED ซ่อน',
+          area: 'ห้องนอน (Bedroom)'
+        }
+      );
+    } else if (project.id === 'p3') {
+      defaultPhotos.push(
+        {
+          url: '/images/luxury_tv_console.png',
+          title: 'ผนังระแนงไม้จริงห้องโถง',
+          desc: 'ระแนงไม้จริงสลับหินอ่อนสีดำ พร้อมงานซ่อนไฟแถบ LED ใต้ชั้นวาง',
+          area: 'ห้องโถงหลัก (Main Hall)'
+        }
+      );
+    }
+
+    const combined = [...portfolioPhotos];
+    defaultPhotos.forEach(dp => {
+      if (!combined.some(c => c.url === dp.url)) {
+        combined.push(dp);
+      }
+    });
+
+    supabasePhotos.forEach(sp => {
+      if (!combined.some(c => c.url === sp)) {
+        combined.push({
+          url: sp,
+          title: 'รูปรายงานหน้างาน (LINE)',
+          desc: 'รูปถ่ายรายงานความคืบหน้าส่งตรงจากกลุ่ม LINE ช่างติดตั้งหน้างาน',
+          area: 'รายงานหน้างาน'
+        });
+      }
+    });
+
+    setProjectPhotos(combined);
+  }, [project.id, project.coverUrl, project.name, supabasePhotos]);
+
+  const handleSaveLineGroupId = (e: React.FormEvent) => {
+    e.preventDefault();
+    project.lineGroupId = lineGroupIdState;
+    setShowSaveToast(true);
+    setTimeout(() => {
+      setShowSaveToast(false);
+    }, 3000);
+  };
 
 
   useEffect(() => {
@@ -1074,29 +1186,53 @@ export default function ProjectDetail() {
 
           {/* TAB 4: PHOTOS TAB */}
           {activeTab === 'photos' && (
-            <div className="p-6 rounded-2xl bg-[#12131a] border border-[#1f212d] space-y-4">
-              <h3 className="text-sm font-bold text-white">อัลบั้มรูปถ่ายหน้างาน (Vision AI Analyzed)</h3>
+            <div className="p-6 rounded-2xl bg-[#12131a] border border-[#1f212d] space-y-4 animate-fadeIn">
+              <div className="flex items-center justify-between border-b border-[#1f212d] pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-white">แกลเลอรีภาพถ่ายโครงการ</h3>
+                  <p className="text-[10px] text-gray-400 mt-1">คลิกที่รูปภาพเพื่อเปิดโหมดขยายใหญ่และดูรายละเอียดชิ้นงานบิวต์อิน</p>
+                </div>
+                <span className="text-[10px] text-gray-500 font-semibold">
+                  ทั้งหมด {projectPhotos.length} รูป
+                </span>
+              </div>
+
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {supabasePhotos.length > 0 ? (
-                  supabasePhotos.map((photoUrl, idx) => (
-                    <div key={idx} className="rounded-xl overflow-hidden bg-gray-800 border border-gray-700 relative group aspect-video">
-                      <img src={photoUrl} className="w-full h-full object-cover" alt="site upload" />
-                      <div className="absolute inset-x-0 bottom-0 bg-black/85 p-2 border-t border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="text-[9px] font-bold text-white">ห้อง: รายงานจาก LINE</div>
-                        <div className="text-[8px] text-emerald-400 mt-0.5">สถานะ: บันทึกข้อมูลสำเร็จ</div>
+                {projectPhotos.length > 0 ? (
+                  projectPhotos.map((photo, idx) => (
+                    <div 
+                      key={idx} 
+                      onClick={() => setLightboxPhoto(photo)}
+                      className="rounded-xl overflow-hidden bg-[#171821] border border-[#1f212d] relative group aspect-video cursor-pointer hover:border-[#c5a880]/50 transition-all duration-300 shadow hover:shadow-[#c5a880]/5"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={photo.url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={photo.title} />
+                      
+                      {/* Hover Overlay */}
+                      <div className="absolute inset-0 bg-black/80 p-3 flex flex-col justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <span className="text-[9px] font-extrabold text-[#c5a880] uppercase tracking-wider block">
+                          {photo.area}
+                        </span>
+                        <div>
+                          <h4 className="text-[11px] font-bold text-white line-clamp-1">{photo.title}</h4>
+                          <span className="text-[9px] text-gray-400 flex items-center gap-1 mt-1">
+                            <Maximize2 className="w-2.5 h-2.5" /> คลิกเพื่อขยายใหญ่
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Default Small Badge */}
+                      <div className="absolute top-2 left-2 block group-hover:hidden transition-all duration-200">
+                        <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm text-gray-300 border border-white/5">
+                          {photo.area.split(' (')[0]}
+                        </span>
                       </div>
                     </div>
                   ))
                 ) : (
-                  [1, 2, 3, 4].map((n) => (
-                    <div key={n} className="rounded-xl overflow-hidden bg-gray-800 border border-gray-700 relative group aspect-video">
-                      <img src="/images/kitchen.png" className="w-full h-full object-cover" alt="site render" />
-                      <div className="absolute inset-x-0 bottom-0 bg-black/85 p-2 border-t border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="text-[9px] font-bold text-white">ห้อง: Built-in ครัว (Mock)</div>
-                        <div className="text-[8px] text-emerald-400 mt-0.5">ผลวิเคราะห์: ติดตั้งแล้ว 85% (ไม่พบจุดบกพร่อง)</div>
-                      </div>
-                    </div>
-                  ))
+                  <div className="col-span-full py-12 text-center text-gray-500 text-xs">
+                    ไม่พบภาพถ่ายในโครงการนี้
+                  </div>
                 )}
               </div>
             </div>
@@ -1320,6 +1456,113 @@ export default function ProjectDetail() {
           </div>
         )}
       </div>
+
+      {/* ================= PHOTOS LIGHTBOX VIEWER ================= */}
+      {lightboxPhoto && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-fadeIn cursor-zoom-out"
+          onClick={() => setLightboxPhoto(null)}
+        >
+          {/* Navigation Controls - Desktop Left */}
+          <button 
+            type="button"
+            onClick={handlePrevPhoto}
+            className="absolute left-6 top-1/2 -translate-y-1/2 z-50 p-2.5 rounded-full bg-black/60 border border-white/10 hover:border-white text-gray-400 hover:text-white transition-all hidden md:block"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+
+          {/* Navigation Controls - Desktop Right */}
+          <button 
+            type="button"
+            onClick={handleNextPhoto}
+            className="absolute right-6 top-1/2 -translate-y-1/2 z-50 p-2.5 rounded-full bg-black/60 border border-white/10 hover:border-white text-gray-400 hover:text-white transition-all hidden md:block"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+
+          <div 
+            className="w-full max-w-4xl bg-[#0a0b10] border border-[#1f212d] rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh] cursor-default animate-scaleUp animate-in"
+            onClick={(e) => e.stopPropagation()} // prevent closing
+          >
+            {/* Image display side */}
+            <div className="flex-1 bg-black flex items-center justify-center overflow-hidden relative min-h-[300px] md:min-h-[450px]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src={lightboxPhoto.url} 
+                alt={lightboxPhoto.title}
+                className="w-full h-full object-contain max-h-[50vh] md:max-h-[80vh]"
+              />
+              
+              {/* Mobile quick controls overlay */}
+              <div className="absolute inset-x-0 bottom-4 flex justify-between px-4 md:hidden">
+                <button
+                  type="button"
+                  onClick={handlePrevPhoto}
+                  className="px-4 py-2 rounded-xl bg-black/80 border border-white/10 text-white text-xs font-bold"
+                >
+                  ◀ ก่อนหน้า
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextPhoto}
+                  className="px-4 py-2 rounded-xl bg-black/80 border border-white/10 text-white text-xs font-bold"
+                >
+                  ถัดไป ▶
+                </button>
+              </div>
+
+              {/* Area Badge */}
+              <div className="absolute top-4 left-4">
+                <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-[#d4af37] text-black border border-[#d4af37]/20 shadow-md">
+                  {lightboxPhoto.area}
+                </span>
+              </div>
+            </div>
+
+            {/* Photo details sidebar */}
+            <div className="w-full md:w-80 bg-[#12131a] border-t md:border-t-0 md:border-l border-[#1f212d] p-5 flex flex-col justify-between max-h-[40vh] md:max-h-none overflow-y-auto">
+              <div className="space-y-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-[9px] text-[#c5a880] font-extrabold uppercase tracking-wider block">
+                      {lightboxPhoto.area}
+                    </span>
+                    <h3 className="text-sm font-bold text-white mt-1 leading-relaxed">
+                      {lightboxPhoto.title}
+                    </h3>
+                  </div>
+                  <button 
+                    onClick={() => setLightboxPhoto(null)}
+                    className="text-gray-500 hover:text-white p-1 rounded-lg border border-[#1f212d] bg-[#1c1d24]"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="space-y-1.5">
+                  <span className="text-[10px] text-gray-500 font-bold uppercase block">รายละเอียดชิ้นงาน / บันทึกหน้างาน:</span>
+                  <p className="text-xs text-gray-300 leading-relaxed whitespace-pre-line bg-[#171821] p-3 rounded-xl border border-[#1f212d]/50">
+                    {lightboxPhoto.desc}
+                  </p>
+                </div>
+                
+                <div className="text-[10px] text-gray-400 border-t border-[#1f212d]/50 pt-2.5 space-y-1">
+                  <div>โครงการ: <span className="text-white font-semibold">{project.name}</span></div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setLightboxPhoto(null)}
+                className="w-full py-2.5 mt-4 rounded-xl bg-white/5 hover:bg-white/10 border border-[#1f212d] text-gray-300 hover:text-white transition-all text-xs font-bold"
+              >
+                ปิดหน้าต่างพรีวิว
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
