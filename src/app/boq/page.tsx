@@ -27,6 +27,10 @@ interface BOQItem {
   category: string; // e.g. "งานตู้เสื้อผ้า & ห้องแต่งตัว (Wardrobe)"
   subCategory: string; // e.g. "โครงตู้เสื้อผ้า (Wardrobe Carcass)"
   name: string; // e.g. "ตู้เสื้อผ้าบิวต์อิน"
+  carcassMaterial?: string; // วัสดุโครงสร้าง
+  surfaceMaterial?: string; // วัสดุปิดผิว
+  fittingBrand?: string;    // อุปกรณ์ฟิตติ้ง/บานพับ
+  accessories?: string;     // อุปกรณ์เสริม/ไฟตกแต่ง
   specs: string; // Specs description
   unit: string; // m, sq.m, job, pcs
   quantity: number;
@@ -100,12 +104,45 @@ const FURNITURE_CATEGORIES: Record<string, string[]> = {
   ]
 };
 
+// Default material catalog dictionary
+const DEFAULT_MATERIAL_CATALOG: Record<string, string[]> = {
+  carcass: [
+    'ไม้ HMR กันชื้น หนา 18มม. เกรด A (High Moisture Resistant MDF)',
+    'ไม้อัดยางแท้เกรดพรีเมียม (Premium Plywood) เคลือบกันน้ำ',
+    'แผ่นพลาสวูดความหนาแน่นสูง (High-Density Plaswood - กันน้ำ 100%)',
+    'ไม้ปาติเกิลเคลือบเมลามีน (Melamine Particle Board)'
+  ],
+  surface: [
+    'ลามิเนตนำเข้า ทนรอยขีดข่วน (Premium Laminate)',
+    'สีพ่นพรีเมียมไฮกลอส (High-Gloss Paint) ขัดละเอียด 5 ชั้น',
+    'วีเนียร์ไม้แท้ธรรมชาติ พ่นแลคเกอร์ด้าน (Natural Wood Veneer)',
+    'กระจกเงาชาทอง/อลูมิเนียมกรอบทองอโนไดซ์ (Golden Mirror with Alu Frame)',
+    'กระจกใสเทมเปอร์เจียรปริม (Tempered Clear Glass)'
+  ],
+  fittings: [
+    'บานพับ & รางลิ้นชัก Soft-close แบรนด์ Hafele (เยอรมนี)',
+    'บานพับ & รางลิ้นชัก Soft-close แบรนด์ Blum (ออสเตรีย)',
+    'รางเลื่อนและบานพับ Soft-close แบรนด์ Hettich (เยอรมนี)',
+    'บานพับทั่วไป ระบบสปริงดึงกลับธรรมดา'
+  ],
+  accessories: [
+    'ราวแขวนผ้าแสตนเลสเกรด 304 + อุปกรณ์ยึด',
+    'ราวแขวนผ้าอัจฉริยะซ่อนไฟ LED Sensor แสงวอร์มไวท์',
+    'ตะแกรงสแตนเลสคว่ำจาน + ถาดรองน้ำในตู้ครัว',
+    'ชั้นวางของภายในแบบปรับระดับได้'
+  ]
+};
+
 // Built-in furniture pre-defined templates for quick adding
 const FURNITURE_TEMPLATES = [
   {
     name: 'ตู้เสื้อผ้าบิวต์อิน (โครง HMR + หน้าบานลามิเนต)',
     category: 'งานตู้เสื้อผ้า & ห้องแต่งตัว (Wardrobe)',
     subCategory: 'โครงตู้เสื้อผ้า (Wardrobe Carcass)',
+    carcassMaterial: 'ไม้ HMR กันชื้น หนา 18มม. เกรด A (High Moisture Resistant MDF)',
+    surfaceMaterial: 'ลามิเนตนำเข้า ทนรอยขีดข่วน (Premium Laminate)',
+    fittingBrand: 'บานพับ & รางลิ้นชัก Soft-close แบรนด์ Hafele (เยอรมนี)',
+    accessories: 'ราวแขวนผ้าแสตนเลสเกรด 304 + อุปกรณ์ยึด',
     specs: 'โครงสร้างไม้ HMR หนา 18มม. กันชื้นเกรด A, หน้าบานกรุลามิเนตลายไม้/สีพื้นเกรดนำเข้า, ราวแขวนผ้าแสตนเลส, บานพับ Soft-close (Hafele)',
     unit: 'เมตรวิ่ง',
     rate: 22000,
@@ -115,6 +152,10 @@ const FURNITURE_TEMPLATES = [
     name: 'ตู้เสื้อผ้าบิวต์อินหน้าบานกระจกเงาชาทองกรอบอลูมิเนียม',
     category: 'งานตู้เสื้อผ้า & ห้องแต่งตัว (Wardrobe)',
     subCategory: 'หน้าบานกระจก/เฟรมอลูมิเนียม (Glass/Alu-Frame Door)',
+    carcassMaterial: 'ไม้ HMR กันชื้น หนา 18มม. เกรด A (High Moisture Resistant MDF)',
+    surfaceMaterial: 'กระจกเงาชาทอง/อลูมิเนียมกรอบทองอโนไดซ์ (Golden Mirror with Alu Frame)',
+    fittingBrand: 'รางเลื่อนและบานพับ Soft-close แบรนด์ Hettich (เยอรมนี)',
+    accessories: 'ชั้นวางของภายในแบบปรับระดับได้',
     specs: 'โครง HMR กันชื้นสีเทาชาร์โคล, หน้าบานกระจกเงาชาทองเจียรปริมกรอบอลูมิเนียมชุบสีทองอโนไดซ์, รางเลื่อนอลูมิเนียมแบรนด์เยอรมัน',
     unit: 'เมตรวิ่ง',
     rate: 26000,
@@ -124,6 +165,10 @@ const FURNITURE_TEMPLATES = [
     name: 'ผนังตกแต่งกรุกันเสียงหัวเตียง (Bedhead Wall Paneling)',
     category: 'งานผนังตกแต่ง & บุหัวเตียง (Wall Paneling & Bedhead)',
     subCategory: 'ผนังกรุผิวลามิเนต/วีเนียร์ (Laminated/Veneer Paneling)',
+    carcassMaterial: 'ไม้ HMR กันชื้น หนา 18มม. เกรด A (High Moisture Resistant MDF)',
+    surfaceMaterial: 'วีเนียร์ไม้แท้ธรรมชาติ พ่นแลคเกอร์ด้าน (Natural Wood Veneer)',
+    fittingBrand: 'บานพับทั่วไป ระบบสปริงดึงกลับธรรมดา',
+    accessories: 'อื่นๆ (Other)',
     specs: 'กรุไม้ MDF หุ้มด้วยฟองน้ำเกรดนุ่มพิเศษบุผ้าสังเคราะห์กันฝุ่นขลิบคิ้วสเตนเลสสีทองกระจกเงา สลับระแนงไม้เนื้อจริงสีวอลนัท',
     unit: 'ตร.ม.',
     rate: 4800,
@@ -133,6 +178,10 @@ const FURNITURE_TEMPLATES = [
     name: 'ตู้วางทีวีบิวต์อินพร้อมตู้โชว์กระจกสูงซ่อนไฟ LED',
     category: 'งานตู้วางทีวี & ตู้โชว์ (TV Console & Display)',
     subCategory: 'ตู้โชว์กระจกบานสูง (Tall Glass Display Cabinet)',
+    carcassMaterial: 'ไม้อัดยางแท้เกรดพรีเมียม (Premium Plywood) เคลือบกันน้ำ',
+    surfaceMaterial: 'กระจกใสเทมเปอร์เจียรปริม (Tempered Clear Glass)',
+    fittingBrand: 'บานพับ & รางลิ้นชัก Soft-close แบรนด์ Hafele (เยอรมนี)',
+    accessories: 'ราวแขวนผ้าอัจฉริยะซ่อนไฟ LED Sensor แสงวอร์มไวท์',
     specs: 'โครงไม้อัดยางกรุวีเนียร์พ่นสีลายไม้ธรรมชาติ สลับหินอ่อนสังเคราะห์หน้าตู้วางทีวี, บานพับเปิดเปิดกระจกใสเทมเปอร์กรอบอลูมิเนียมบางเฉียบซ่อน LED แสงวอร์ม',
     unit: 'เมตรวิ่ง',
     rate: 19500,
@@ -142,6 +191,10 @@ const FURNITURE_TEMPLATES = [
     name: 'เคาน์เตอร์ครัวล่าง (Base Kitchen Cabinet - กันน้ำ 100%)',
     category: 'งานครัว & โซนอาหาร (Kitchen & Dining)',
     subCategory: 'เคาน์เตอร์ตู้ล่าง (Base Cabinet - กันน้ำ/กันปลวก)',
+    carcassMaterial: 'แผ่นพลาสวูดความหนาแน่นสูง (High-Density Plaswood - กันน้ำ 100%)',
+    surfaceMaterial: 'ลามิเนตนำเข้า ทนรอยขีดข่วน (Premium Laminate)',
+    fittingBrand: 'บานพับ & รางลิ้นชัก Soft-close แบรนด์ Blum (ออสเตรีย)',
+    accessories: 'ตะแกรงสแตนเลสคว่ำจาน + ถาดรองน้ำในตู้ครัว',
     specs: 'โครงสร้างไม้อัดแท้เกรดพรีเมียม (Plywood) เคลือบฟิล์มกันน้ำ, หน้าบานลามิเนตทนรอยขีดข่วนและความร้อน, อุปกรณ์รางลิ้นชักรับใต้ระบบสองจังหวะดึงกลับอัตโนมัติ',
     unit: 'เมตรวิ่ง',
     rate: 16500,
@@ -151,6 +204,10 @@ const FURNITURE_TEMPLATES = [
     name: 'เคาน์เตอร์ครัวบน (Wall Kitchen Cabinet)',
     category: 'งานครัว & โซนอาหาร (Kitchen & Dining)',
     subCategory: 'ตู้แขวนบน (Wall/Upper Cabinet)',
+    carcassMaterial: 'ไม้ HMR กันชื้น หนา 18มม. เกรด A (High Moisture Resistant MDF)',
+    surfaceMaterial: 'สีพ่นพรีเมียมไฮกลอส (High-Gloss Paint) ขัดละเอียด 5 ชั้น',
+    fittingBrand: 'บานพับ & รางลิ้นชัก Soft-close แบรนด์ Hafele (เยอรมนี)',
+    accessories: 'ชั้นวางของภายในแบบปรับระดับได้',
     specs: 'โครงสร้างไม้ HMR, บานเปิดพ่นสีพ่นพรีเมียมไฮกลอส (High-Gloss Paint) ขัดละเอียด, บานพับ Soft-close พร้อมโช้คอัพบานยกไฮดรอลิก',
     unit: 'เมตรวิ่ง',
     rate: 13500,
@@ -160,6 +217,10 @@ const FURNITURE_TEMPLATES = [
     name: 'ท็อปหินควอตซ์เคาน์เตอร์ครัว (Quartz Stone Tabletop)',
     category: 'งานครัว & โซนอาหาร (Kitchen & Dining)',
     subCategory: 'ท็อปหินเคาน์เตอร์ครัว (Countertop Stone)',
+    carcassMaterial: 'อื่นๆ (Other)',
+    surfaceMaterial: 'อื่นๆ (Other)',
+    fittingBrand: 'อื่นๆ (Other)',
+    accessories: 'อื่นๆ (Other)',
     specs: 'หินควอตซ์สีขาวลายริ้วธรรมชาติ (Quartz Calacatta Marble Pattern) หนา 20มม. ทนรอยขีดข่วนทนคราบฝังแน่น เจาะช่องฝังอ่างล้างจานซ่อนใต้ท็อป',
     unit: 'เมตรวิ่ง',
     rate: 9000,
@@ -169,6 +230,10 @@ const FURNITURE_TEMPLATES = [
     name: 'ราวแขวนเสื้อผ้าอัจฉริยะพร้อมชุดไฟ LED Sensor',
     category: 'งานตู้เสื้อผ้า & ห้องแต่งตัว (Wardrobe)',
     subCategory: 'ราวแขวนและไฟ LED (Hanging Rails & LED Lights)',
+    carcassMaterial: 'อื่นๆ (Other)',
+    surfaceMaterial: 'อื่นๆ (Other)',
+    fittingBrand: 'อื่นๆ (Other)',
+    accessories: 'ราวแขวนผ้าอัจฉริยะซ่อนไฟ LED Sensor แสงวอร์มไวท์',
     specs: 'ราวแขวนผ้าอลูมิเนียมซ่อนรางไฟ LED พร้อมเซนเซอร์เปิดอัตโนมัติเมื่อเปิดหน้าบาน แสงวอร์มไวท์ 3000K',
     unit: 'ชุด',
     rate: 3500,
@@ -194,6 +259,10 @@ const INITIAL_BOQS: BOQ[] = [
         area: 'Master Bedroom (ห้องนอนใหญ่)',
         category: 'งานตู้เสื้อผ้า & ห้องแต่งตัว (Wardrobe)',
         subCategory: 'หน้าบานกระจก/เฟรมอลูมิเนียม (Glass/Alu-Frame Door)',
+        carcassMaterial: 'ไม้ HMR กันชื้น หนา 18มม. เกรด A (High Moisture Resistant MDF)',
+        surfaceMaterial: 'กระจกเงาชาทอง/อลูมิเนียมกรอบทองอโนไดซ์ (Golden Mirror with Alu Frame)',
+        fittingBrand: 'รางเลื่อนและบานพับ Soft-close แบรนด์ Hettich (เยอรมนี)',
+        accessories: 'ชั้นวางของภายในแบบปรับระดับได้',
         name: 'ตู้เสื้อผ้าบิวต์อินหน้าบานกระจกเงาชาทองกรอบอลูมิเนียม',
         specs: 'โครง HMR กันชื้นสีเทาชาร์โคล, หน้าบานกระจกเงาชาทองเจียรปริมกรอบอลูมิเนียมชุบสีทองอโนไดซ์, รางเลื่อนอลูมิเนียมแบรนด์เยอรมัน',
         unit: 'เมตรวิ่ง',
@@ -206,6 +275,10 @@ const INITIAL_BOQS: BOQ[] = [
         area: 'Master Bedroom (ห้องนอนใหญ่)',
         category: 'งานผนังตกแต่ง & บุหัวเตียง (Wall Paneling & Bedhead)',
         subCategory: 'ผนังกรุผิวลามิเนต/วีเนียร์ (Laminated/Veneer Paneling)',
+        carcassMaterial: 'ไม้ HMR กันชื้น หนา 18มม. เกรด A (High Moisture Resistant MDF)',
+        surfaceMaterial: 'วีเนียร์ไม้แท้ธรรมชาติ พ่นแลคเกอร์ด้าน (Natural Wood Veneer)',
+        fittingBrand: 'บานพับทั่วไป ระบบสปริงดึงกลับธรรมดา',
+        accessories: 'อื่นๆ (Other)',
         name: 'ผนังตกแต่งกรุกันเสียงหัวเตียง (Bedhead Wall Paneling)',
         specs: 'กรุไม้ MDF หุ้มด้วยฟองน้ำเกรดนุ่มพิเศษบุผ้าสังเคราะห์กันฝุ่นขลิบคิ้วสเตนเลสสีทองกระจกเงา สลับระแนงไม้เนื้อจริงสีวอลนัท',
         unit: 'ตร.ม.',
@@ -218,6 +291,10 @@ const INITIAL_BOQS: BOQ[] = [
         area: 'Living Room (ห้องนั่งเล่น)',
         category: 'งานตู้วางทีวี & ตู้โชว์ (TV Console & Display)',
         subCategory: 'ตู้โชว์กระจกบานสูง (Tall Glass Display Cabinet)',
+        carcassMaterial: 'ไม้อัดยางแท้เกรดพรีเมียม (Premium Plywood) เคลือบกันน้ำ',
+        surfaceMaterial: 'กระจกใสเทมเปอร์เจียรปริม (Tempered Clear Glass)',
+        fittingBrand: 'บานพับ & รางลิ้นชัก Soft-close แบรนด์ Hafele (เยอรมนี)',
+        accessories: 'ราวแขวนผ้าอัจฉริยะซ่อนไฟ LED Sensor แสงวอร์มไวท์',
         name: 'ตู้วางทีวีบิวต์อินพร้อมตู้โชว์กระจกสูงซ่อนไฟ LED',
         specs: 'โครงไม้อัดยางกรุวีเนียร์พ่นสีลายไม้ธรรมชาติ สลับหินอ่อนสังเคราะห์หน้าตู้วางทีวี, บานพับเปิดเปิดกระจกใสเทมเปอร์กรอบอลูมิเนียมบางเฉียบซ่อน LED แสงวอร์ม',
         unit: 'เมตรวิ่ง',
@@ -230,6 +307,10 @@ const INITIAL_BOQS: BOQ[] = [
         area: 'Kitchen Area (โซนครัวบิวต์อิน)',
         category: 'งานครัว & โซนอาหาร (Kitchen & Dining)',
         subCategory: 'เคาน์เตอร์ตู้ล่าง (Base Cabinet - กันน้ำ/กันปลวก)',
+        carcassMaterial: 'ไม้อัดยางแท้เกรดพรีเมียม (Premium Plywood) เคลือบกันน้ำ',
+        surfaceMaterial: 'ลามิเนตนำเข้า ทนรอยขีดข่วน (Premium Laminate)',
+        fittingBrand: 'บานพับ & รางลิ้นชัก Soft-close แบรนด์ Blum (ออสเตรีย)',
+        accessories: 'ตะแกรงสแตนเลสคว่ำจาน + ถาดรองน้ำในตู้ครัว',
         name: 'เคาน์เตอร์ครัวล่าง (Base Kitchen Cabinet - กันน้ำ 100%)',
         specs: 'โครงสร้างไม้อัดแท้เกรดพรีเมียม (Plywood) เคลือบฟิล์มกันน้ำ, หน้าบานลามิเนตทนรอยขีดข่วนและความร้อน, อุปกรณ์รางลิ้นชักรับใต้ระบบสองจังหวะดึงกลับอัตโนมัติ',
         unit: 'เมตรวิ่ง',
@@ -242,6 +323,10 @@ const INITIAL_BOQS: BOQ[] = [
         area: 'Kitchen Area (โซนครัวบิวต์อิน)',
         category: 'งานครัว & โซนอาหาร (Kitchen & Dining)',
         subCategory: 'ตู้แขวนบน (Wall/Upper Cabinet)',
+        carcassMaterial: 'ไม้ HMR กันชื้น หนา 18มม. เกรด A (High Moisture Resistant MDF)',
+        surfaceMaterial: 'สีพ่นพรีเมียมไฮกลอส (High-Gloss Paint) ขัดละเอียด 5 ชั้น',
+        fittingBrand: 'บานพับ & รางลิ้นชัก Soft-close แบรนด์ Hafele (เยอรมนี)',
+        accessories: 'ชั้นวางของภายในแบบปรับระดับได้',
         name: 'เคาน์เตอร์ครัวบน (Wall Kitchen Cabinet)',
         specs: 'โครงสร้างไม้ HMR, บานเปิดพ่นสีพ่นพรีเมียมไฮกลอส (High-Gloss Paint) ขัดละเอียด, บานพับ Soft-close พร้อมโช้คอัพบานยกไฮดรอลิก',
         unit: 'เมตรวิ่ง',
@@ -254,6 +339,10 @@ const INITIAL_BOQS: BOQ[] = [
         area: 'Kitchen Area (โซนครัวบิวต์อิน)',
         category: 'งานครัว & โซนอาหาร (Kitchen & Dining)',
         subCategory: 'ท็อปหินเคาน์เตอร์ครัว (Countertop Stone)',
+        carcassMaterial: 'อื่นๆ (Other)',
+        surfaceMaterial: 'อื่นๆ (Other)',
+        fittingBrand: 'อื่นๆ (Other)',
+        accessories: 'อื่นๆ (Other)',
         name: 'ท็อปหินควอตซ์เคาน์เตอร์ครัว (Quartz Stone Tabletop)',
         specs: 'หินควอตซ์สีขาวลายริ้วธรรมชาติ (Quartz Calacatta Marble Pattern) หนา 20มม. ทนรอยขีดข่วนทนคราบฝังแน่น เจาะช่องฝังอ่างล้างจานซ่อนใต้ท็อป',
         unit: 'เมตรวิ่ง',
@@ -279,6 +368,10 @@ const INITIAL_BOQS: BOQ[] = [
         area: 'Living Room (ห้องรับแขกชั้น 1)',
         category: 'งานตู้วางทีวี & ตู้โชว์ (TV Console & Display)',
         subCategory: 'ตู้โชว์กระจกบานสูง (Tall Glass Display Cabinet)',
+        carcassMaterial: 'ไม้อัดยางแท้เกรดพรีเมียม (Premium Plywood) เคลือบกันน้ำ',
+        surfaceMaterial: 'กระจกใสเทมเปอร์เจียรปริม (Tempered Clear Glass)',
+        fittingBrand: 'บานพับ & รางลิ้นชัก Soft-close แบรนด์ Hafele (เยอรมนี)',
+        accessories: 'ราวแขวนผ้าอัจฉริยะซ่อนไฟ LED Sensor แสงวอร์มไวท์',
         name: 'ตู้วางทีวีบิวต์อินพร้อมตู้โชว์กระจกสูงซ่อนไฟ LED',
         specs: 'โครงไม้อัดยางกรุวีเนียร์พ่นสีลายไม้ธรรมชาติ สลับหินอ่อนสังเคราะห์หน้าตู้วางทีวี, บานพับเปิดเปิดกระจกใสเทมเปอร์กรอบอลูมิเนียมบางเฉียบซ่อน LED แสงวอร์ม',
         unit: 'เมตรวิ่ง',
@@ -291,6 +384,10 @@ const INITIAL_BOQS: BOQ[] = [
         area: 'Master Bedroom (ห้องนอนใหญ่ชั้น 2)',
         category: 'งานตู้เสื้อผ้า & ห้องแต่งตัว (Wardrobe)',
         subCategory: 'โครงตู้เสื้อผ้า (Wardrobe Carcass)',
+        carcassMaterial: 'ไม้ HMR กันชื้น หนา 18มม. เกรด A (High Moisture Resistant MDF)',
+        surfaceMaterial: 'ลามิเนตนำเข้า ทนรอยขีดข่วน (Premium Laminate)',
+        fittingBrand: 'บานพับ & รางลิ้นชัก Soft-close แบรนด์ Hafele (เยอรมนี)',
+        accessories: 'ราวแขวนผ้าแสตนเลสเกรด 304 + อุปกรณ์ยึด',
         name: 'ตู้เสื้อผ้าบิวต์อิน (โครง HMR + หน้าบานลามิเนต)',
         specs: 'โครงสร้างไม้ HMR หนา 18มม. กันชื้นเกรด A, หน้าบานกรุลามิเนตลายไม้/สีพื้นเกดนำเข้า, ราวแขวนผ้าแสตนเลส, บานพับ Soft-close (Hafele)',
         unit: 'เมตรวิ่ง',
@@ -326,6 +423,10 @@ export default function BOQPage() {
   const [itemArea, setItemArea] = useState('');
   const [itemCategory, setItemCategory] = useState('');
   const [itemSubCategory, setItemSubCategory] = useState('');
+  const [itemCarcass, setItemCarcass] = useState('');
+  const [itemSurface, setItemSurface] = useState('');
+  const [itemFittings, setItemFittings] = useState('');
+  const [itemAccessories, setItemAccessories] = useState('');
   const [itemName, setItemName] = useState('');
   const [itemSpecs, setItemSpecs] = useState('');
   const [itemUnit, setItemUnit] = useState('เมตรวิ่ง');
@@ -333,6 +434,14 @@ export default function BOQPage() {
   const [itemRate, setItemRate] = useState(0);
   const [itemCost, setItemCost] = useState(0);
   const [editingItem, setEditingItem] = useState<BOQItem | null>(null);
+
+  // Material Catalog State
+  const [materialCatalog, setMaterialCatalog] = useState<Record<string, string[]>>(DEFAULT_MATERIAL_CATALOG);
+  const [isCatalogModalOpen, setIsCatalogModalOpen] = useState(false);
+  const [activeCatalogTab, setActiveCatalogTab] = useState<'carcass' | 'surface' | 'fittings' | 'accessories'>('carcass');
+  const [newCatalogItem, setNewCatalogItem] = useState('');
+  const [editingCatalogIndex, setEditingCatalogIndex] = useState<number | null>(null);
+  const [editingCatalogValue, setEditingCatalogValue] = useState('');
 
   // Toast
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -356,6 +465,15 @@ export default function BOQPage() {
           console.error('Error loading BOQ from localStorage:', e);
         }
       }
+      
+      const savedCatalog = localStorage.getItem('company_material_catalog');
+      if (savedCatalog) {
+        try {
+          setMaterialCatalog(JSON.parse(savedCatalog));
+        } catch (e) {
+          console.error('Error loading Material Catalog from localStorage:', e);
+        }
+      }
     }
   }, []);
 
@@ -363,6 +481,13 @@ export default function BOQPage() {
     setBoqs(updatedBoqs);
     if (typeof window !== 'undefined') {
       localStorage.setItem('company_boqs', JSON.stringify(updatedBoqs));
+    }
+  };
+
+  const saveCatalogToLocalStorage = (updatedCatalog: Record<string, string[]>) => {
+    setMaterialCatalog(updatedCatalog);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('company_material_catalog', JSON.stringify(updatedCatalog));
     }
   };
 
@@ -396,6 +521,10 @@ export default function BOQPage() {
     setItemName(t.name);
     setItemCategory(t.category);
     setItemSubCategory(t.subCategory);
+    setItemCarcass(t.carcassMaterial || '');
+    setItemSurface(t.surfaceMaterial || '');
+    setItemFittings(t.fittingBrand || '');
+    setItemAccessories(t.accessories || '');
     setItemSpecs(t.specs);
     setItemUnit(t.unit);
     setItemRate(t.rate);
@@ -473,6 +602,10 @@ export default function BOQPage() {
       category: itemCategory || 'งานตกแต่งภายในอื่นๆ (Other Built-in Items)',
       subCategory: itemSubCategory || 'อื่นๆ (Other)',
       name: itemName,
+      carcassMaterial: itemCarcass,
+      surfaceMaterial: itemSurface,
+      fittingBrand: itemFittings,
+      accessories: itemAccessories,
       specs: itemSpecs,
       unit: itemUnit,
       quantity: Number(itemQty),
@@ -511,6 +644,10 @@ export default function BOQPage() {
     setItemArea(item.area);
     setItemCategory(item.category || '');
     setItemSubCategory(item.subCategory || '');
+    setItemCarcass(item.carcassMaterial || '');
+    setItemSurface(item.surfaceMaterial || '');
+    setItemFittings(item.fittingBrand || '');
+    setItemAccessories(item.accessories || '');
     setItemName(item.name);
     setItemSpecs(item.specs);
     setItemUnit(item.unit);
@@ -535,6 +672,10 @@ export default function BOQPage() {
               category: itemCategory || 'งานตกแต่งภายในอื่นๆ (Other Built-in Items)',
               subCategory: itemSubCategory || 'อื่นๆ (Other)',
               name: itemName,
+              carcassMaterial: itemCarcass,
+              surfaceMaterial: itemSurface,
+              fittingBrand: itemFittings,
+              accessories: itemAccessories,
               specs: itemSpecs,
               unit: itemUnit,
               quantity: Number(itemQty),
@@ -556,10 +697,49 @@ export default function BOQPage() {
     showToast('ปรับปรุงข้อมูลสเปก BOQ สำเร็จ!', 'success');
   };
 
+  // Catalog CRUD Operations
+  const handleAddCatalogItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatalogItem.trim()) return;
+    const updatedTabItems = [...materialCatalog[activeCatalogTab], newCatalogItem.trim()];
+    const updatedCatalog = { ...materialCatalog, [activeCatalogTab]: updatedTabItems };
+    saveCatalogToLocalStorage(updatedCatalog);
+    setNewCatalogItem('');
+    showToast('เพิ่มวัสดุใหม่ลงคลังสำเร็จ!', 'success');
+  };
+
+  const handleDeleteCatalogItem = (indexToDelete: number) => {
+    const updatedTabItems = materialCatalog[activeCatalogTab].filter((_, idx) => idx !== indexToDelete);
+    const updatedCatalog = { ...materialCatalog, [activeCatalogTab]: updatedTabItems };
+    saveCatalogToLocalStorage(updatedCatalog);
+    showToast('ลบรายการวัสดุออกจากคลังแล้ว', 'success');
+  };
+
+  const handleStartEditCatalogItem = (index: number, value: string) => {
+    setEditingCatalogIndex(index);
+    setEditingCatalogValue(value);
+  };
+
+  const handleSaveEditCatalogItem = (index: number) => {
+    if (!editingCatalogValue.trim()) return;
+    const updatedTabItems = materialCatalog[activeCatalogTab].map((item, idx) => 
+      idx === index ? editingCatalogValue.trim() : item
+    );
+    const updatedCatalog = { ...materialCatalog, [activeCatalogTab]: updatedTabItems };
+    saveCatalogToLocalStorage(updatedCatalog);
+    setEditingCatalogIndex(null);
+    setEditingCatalogValue('');
+    showToast('แก้ไขข้อมูลวัสดุในคลังสำเร็จ!', 'success');
+  };
+
   const resetItemFields = () => {
     setItemArea('');
     setItemCategory('');
     setItemSubCategory('');
+    setItemCarcass('');
+    setItemSurface('');
+    setItemFittings('');
+    setItemAccessories('');
     setItemName('');
     setItemSpecs('');
     setItemUnit('เมตรวิ่ง');
@@ -889,7 +1069,35 @@ export default function BOQPage() {
                                             {item.subCategory}
                                           </span>
                                         )}
-                                        <div className="text-[9px] text-gray-500 print:text-gray-500 mt-1 leading-relaxed whitespace-pre-wrap">{item.specs}</div>
+                                        {item.carcassMaterial || item.surfaceMaterial || item.fittingBrand || item.accessories ? (
+                                          <div className="mt-1.5 space-y-1 bg-[#12131a]/60 border border-[#1f212d] p-2 rounded-xl text-[9px] print:bg-gray-55 print:border-gray-200">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1">
+                                              <div>
+                                                <span className="text-gray-500 font-semibold">โครงสร้าง:</span>{' '}
+                                                <span className="text-gray-300 print:text-black">{item.carcassMaterial || '-'}</span>
+                                              </div>
+                                              <div>
+                                                <span className="text-gray-500 font-semibold">ปิดผิว:</span>{' '}
+                                                <span className="text-gray-300 print:text-black">{item.surfaceMaterial || '-'}</span>
+                                              </div>
+                                              <div>
+                                                <span className="text-gray-500 font-semibold">ฟิตติ้ง:</span>{' '}
+                                                <span className="text-gray-300 print:text-black">{item.fittingBrand || '-'}</span>
+                                              </div>
+                                              <div>
+                                                <span className="text-gray-500 font-semibold">อุปกรณ์เสริม:</span>{' '}
+                                                <span className="text-gray-300 print:text-black">{item.accessories || '-'}</span>
+                                              </div>
+                                            </div>
+                                            {item.specs && (
+                                              <div className="border-t border-[#1f212d]/50 pt-1 mt-1 text-[8.5px] text-gray-400 italic">
+                                                <span className="text-gray-500 font-semibold">หมายเหตุ:</span> {item.specs}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <div className="text-[9px] text-gray-500 print:text-gray-500 mt-1 leading-relaxed whitespace-pre-wrap">{item.specs}</div>
+                                        )}
                                       </td>
                                       <td className="py-3 text-center text-gray-400 print:text-black">{item.unit}</td>
                                       <td className="py-3 text-center text-white print:text-black font-semibold font-mono">{item.quantity}</td>
@@ -1171,11 +1379,87 @@ export default function BOQPage() {
                   </div>
                 </div>
 
+                <div className="space-y-3 bg-[#1c1d24] p-3.5 rounded-xl border border-[#2d2f3d]">
+                  <div className="flex justify-between items-center pb-2 border-b border-[#2d2f3d]/50">
+                    <span className="text-[10px] font-bold text-[#c5a880] uppercase tracking-wider">สเปกโครงสร้าง & ฟิตติ้ง (Structured Specs)</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsCatalogModalOpen(true)}
+                      className="text-[9px] font-extrabold text-[#c5a880] bg-[#c5a880]/10 border border-[#c5a880]/20 px-2 py-0.5 rounded-md hover:bg-[#c5a880]/20 transition-all flex items-center gap-1"
+                    >
+                      <Box className="w-3 h-3" />
+                      จัดการคลังวัสดุ
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] text-gray-400 block font-semibold">วัสดุโครงสร้าง (Carcass)</label>
+                      <select
+                        value={itemCarcass}
+                        onChange={e => setItemCarcass(e.target.value)}
+                        className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
+                      >
+                        <option value="">-- เลือกโครงสร้าง --</option>
+                        {(materialCatalog.carcass || []).map(mat => (
+                          <option key={mat} value={mat}>{mat}</option>
+                        ))}
+                        <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                      </select>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="text-[9px] text-gray-400 block font-semibold">วัสดุปิดผิว (Surface)</label>
+                      <select
+                        value={itemSurface}
+                        onChange={e => setItemSurface(e.target.value)}
+                        className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
+                      >
+                        <option value="">-- เลือกการปิดผิว --</option>
+                        {(materialCatalog.surface || []).map(mat => (
+                          <option key={mat} value={mat}>{mat}</option>
+                        ))}
+                        <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[9px] text-gray-400 block font-semibold">ฟิตติ้ง/บานพับ (Fittings)</label>
+                      <select
+                        value={itemFittings}
+                        onChange={e => setItemFittings(e.target.value)}
+                        className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
+                      >
+                        <option value="">-- เลือกฟิตติ้ง --</option>
+                        {(materialCatalog.fittings || []).map(mat => (
+                          <option key={mat} value={mat}>{mat}</option>
+                        ))}
+                        <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[9px] text-gray-400 block font-semibold">อุปกรณ์เสริม (Accessories)</label>
+                      <select
+                        value={itemAccessories}
+                        onChange={e => setItemAccessories(e.target.value)}
+                        className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
+                      >
+                        <option value="">-- เลือกอุปกรณ์เสริม --</option>
+                        {(materialCatalog.accessories || []).map(mat => (
+                          <option key={mat} value={mat}>{mat}</option>
+                        ))}
+                        <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">รายละเอียดสเปกโครงสร้างและฟิตติ้ง</label>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase">หมายเหตุสเปกเพิ่มเติม / สเปกแบบพิเศษ (Custom Specs)</label>
                   <textarea
-                    rows={3}
-                    placeholder="กรอกสเปกวัสดุ โครงไม้ HMR หรือไม้อัดยาง, ลามิเนตยี่ห้อ สี, ระบบรางลิ้นชัก, มือจับหน้าบาน หรือไฟ LED"
+                    rows={2}
+                    placeholder="กรอกสเปกเพิ่มเติมในกรณีที่มีคุณสมบัติเฉพาะกิจนอกเหนือจากตัวเลือกคลัง..."
                     value={itemSpecs}
                     onChange={e => setItemSpecs(e.target.value)}
                     className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#c5a880] transition-colors"
@@ -1343,13 +1627,89 @@ export default function BOQPage() {
                 </div>
               </div>
 
+              <div className="space-y-3 bg-[#1c1d24] p-3.5 rounded-xl border border-[#2d2f3d]">
+                <div className="flex justify-between items-center pb-2 border-b border-[#2d2f3d]/50">
+                  <span className="text-[10px] font-bold text-[#c5a880] uppercase tracking-wider">สเปกโครงสร้าง & ฟิตติ้ง (Structured Specs)</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsCatalogModalOpen(true)}
+                    className="text-[9px] font-extrabold text-[#c5a880] bg-[#c5a880]/10 border border-[#c5a880]/20 px-2 py-0.5 rounded-md hover:bg-[#c5a880]/20 transition-all flex items-center gap-1"
+                  >
+                    <Box className="w-3 h-3" />
+                    จัดการคลังวัสดุ
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[9px] text-gray-400 block font-semibold">วัสดุโครงสร้าง (Carcass)</label>
+                    <select
+                      value={itemCarcass}
+                      onChange={e => setItemCarcass(e.target.value)}
+                      className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
+                    >
+                      <option value="">-- เลือกโครงสร้าง --</option>
+                      {(materialCatalog.carcass || []).map(mat => (
+                        <option key={mat} value={mat}>{mat}</option>
+                      ))}
+                      <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                    </select>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="text-[9px] text-gray-400 block font-semibold">วัสดุปิดผิว (Surface)</label>
+                    <select
+                      value={itemSurface}
+                      onChange={e => setItemSurface(e.target.value)}
+                      className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
+                    >
+                      <option value="">-- เลือกการปิดผิว --</option>
+                      {(materialCatalog.surface || []).map(mat => (
+                        <option key={mat} value={mat}>{mat}</option>
+                      ))}
+                      <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] text-gray-400 block font-semibold">ฟิตติ้ง/บานพับ (Fittings)</label>
+                    <select
+                      value={itemFittings}
+                      onChange={e => setItemFittings(e.target.value)}
+                      className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
+                    >
+                      <option value="">-- เลือกฟิตติ้ง --</option>
+                      {(materialCatalog.fittings || []).map(mat => (
+                        <option key={mat} value={mat}>{mat}</option>
+                      ))}
+                      <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] text-gray-400 block font-semibold">อุปกรณ์เสริม (Accessories)</label>
+                    <select
+                      value={itemAccessories}
+                      onChange={e => setItemAccessories(e.target.value)}
+                      className="w-full bg-[#12131a] border border-[#1f212d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c5a880]"
+                    >
+                      <option value="">-- เลือกอุปกรณ์เสริม --</option>
+                      {(materialCatalog.accessories || []).map(mat => (
+                        <option key={mat} value={mat}>{mat}</option>
+                      ))}
+                      <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase">รายละเอียดสเปกโครงสร้างและฟิตติ้ง</label>
+                <label className="text-[10px] font-bold text-gray-400 uppercase">หมายเหตุสเปกเพิ่มเติม / สเปกแบบพิเศษ (Custom Specs)</label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={itemSpecs}
                   onChange={e => setItemSpecs(e.target.value)}
-                  className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
+                  className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#c5a880] transition-colors"
                 />
               </div>
 
@@ -1430,6 +1790,180 @@ export default function BOQPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MATERIAL CATALOG MANAGEMENT MODAL ================= */}
+      {isCatalogModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/85 backdrop-blur-md transition-opacity duration-300 animate-fadeIn p-0 md:p-4">
+          <div className="w-full max-w-2xl bg-[#12131a] border-t md:border border-[#1f212d] rounded-t-3xl md:rounded-2xl overflow-hidden shadow-2xl animate-slideUp md:animate-scaleUp pb-8 md:pb-0 max-h-[90vh] flex flex-col">
+            
+            {/* Header */}
+            <div className="p-5 border-b border-[#1f212d] flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-white tracking-wide flex items-center gap-2">
+                  <Box className="w-4 h-4 text-[#c5a880]" />
+                  <span>จัดการคลังวัสดุมาตรฐาน (Material Catalog)</span>
+                </h3>
+                <p className="text-[10px] text-gray-400 mt-1">เพิ่ม แก้ไข หรือลบตัวเลือกสำหรับ Dropdown สเปกวัสดุโครงสร้างและฟิตติ้ง</p>
+              </div>
+              <button 
+                onClick={() => setIsCatalogModalOpen(false)} 
+                className="text-gray-400 hover:text-white transition-colors bg-[#1c1d24] hover:bg-[#252731] p-1.5 rounded-lg border border-[#2d2f3d]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Content Tabs */}
+            <div className="flex border-b border-[#1f212d]/60 bg-[#171821] px-4 pt-2">
+              <button
+                type="button"
+                onClick={() => { setActiveCatalogTab('carcass'); setEditingCatalogIndex(null); }}
+                className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 ${
+                  activeCatalogTab === 'carcass'
+                    ? 'border-[#c5a880] text-[#c5a880]'
+                    : 'border-transparent text-gray-400 hover:text-white'
+                }`}
+              >
+                โครงสร้าง (Carcass)
+              </button>
+              <button
+                type="button"
+                onClick={() => { setActiveCatalogTab('surface'); setEditingCatalogIndex(null); }}
+                className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 ${
+                  activeCatalogTab === 'surface'
+                    ? 'border-[#c5a880] text-[#c5a880]'
+                    : 'border-transparent text-gray-400 hover:text-white'
+                }`}
+              >
+                ปิดผิว (Surface)
+              </button>
+              <button
+                type="button"
+                onClick={() => { setActiveCatalogTab('fittings'); setEditingCatalogIndex(null); }}
+                className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 ${
+                  activeCatalogTab === 'fittings'
+                    ? 'border-[#c5a880] text-[#c5a880]'
+                    : 'border-transparent text-gray-400 hover:text-white'
+                }`}
+              >
+                ฟิตติ้ง (Fittings)
+              </button>
+              <button
+                type="button"
+                onClick={() => { setActiveCatalogTab('accessories'); setEditingCatalogIndex(null); }}
+                className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 ${
+                  activeCatalogTab === 'accessories'
+                    ? 'border-[#c5a880] text-[#c5a880]'
+                    : 'border-transparent text-gray-400 hover:text-white'
+                }`}
+              >
+                อุปกรณ์เสริม (Accessories)
+              </button>
+            </div>
+
+            <div className="p-5 flex-1 overflow-y-auto space-y-4 max-h-[50vh]">
+              {/* Add New Item Form inside Tab */}
+              <form onSubmit={handleAddCatalogItem} className="flex gap-2">
+                <input
+                  type="text"
+                  required
+                  placeholder={`เพิ่มตัวเลือกใหม่ในหมวด ${
+                    activeCatalogTab === 'carcass' ? 'โครงสร้าง' :
+                    activeCatalogTab === 'surface' ? 'ปิดผิว' :
+                    activeCatalogTab === 'fittings' ? 'ฟิตติ้ง' : 'อุปกรณ์เสริม'
+                  }...`}
+                  value={newCatalogItem}
+                  onChange={e => setNewCatalogItem(e.target.value)}
+                  className="flex-1 bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#c5a880] transition-colors"
+                />
+                <button
+                  type="submit"
+                  className="bg-gradient-to-r from-[#d4af37] to-[#c5a880] text-black font-extrabold px-4 py-2 rounded-xl text-xs hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-1 shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>เพิ่ม</span>
+                </button>
+              </form>
+
+              {/* Items List */}
+              <div className="space-y-2">
+                {(materialCatalog[activeCatalogTab] || []).length === 0 ? (
+                  <div className="text-center py-8 border border-dashed border-[#1f212d] rounded-xl text-xs text-gray-500">
+                    ยังไม่มีรายการตัวเลือกในหมวดหมู่นี้
+                  </div>
+                ) : (
+                  (materialCatalog[activeCatalogTab] || []).map((item, idx) => (
+                    <div 
+                      key={idx}
+                      className="flex items-center justify-between p-3 rounded-xl bg-[#1c1d24]/50 border border-[#2d2f3d] hover:border-[#c5a880]/30 transition-all gap-3"
+                    >
+                      {editingCatalogIndex === idx ? (
+                        <div className="flex-1 flex gap-2">
+                          <input
+                            type="text"
+                            value={editingCatalogValue}
+                            onChange={e => setEditingCatalogValue(e.target.value)}
+                            className="flex-1 bg-[#12131a] border border-[#c5a880] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleSaveEditCatalogItem(idx)}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1 rounded-lg text-[10px] transition-colors"
+                          >
+                            บันทึก
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingCatalogIndex(null)}
+                            className="bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold px-3 py-1 rounded-lg text-[10px] transition-colors"
+                          >
+                            ยกเลิก
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-xs text-gray-300 font-medium leading-relaxed">{item}</span>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleStartEditCatalogItem(idx, item)}
+                              className="p-1.5 rounded hover:bg-[#1c1d24] text-gray-400 hover:text-[#c5a880] transition-colors"
+                              title="แก้ไขชื่อวัสดุ"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCatalogItem(idx)}
+                              className="p-1.5 rounded hover:bg-red-950/30 text-gray-400 hover:text-red-400 transition-colors"
+                              title="ลบตัวเลือก"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-[#1f212d] bg-[#12131a] flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsCatalogModalOpen(false)}
+                className="px-5 py-2 bg-[#1c1d24] hover:bg-[#252731] border border-[#2d2f3d] text-gray-300 font-bold rounded-xl text-xs transition-colors"
+              >
+                ปิดหน้าต่าง
+              </button>
+            </div>
+
           </div>
         </div>
       )}
