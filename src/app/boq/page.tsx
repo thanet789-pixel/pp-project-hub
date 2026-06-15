@@ -24,6 +24,8 @@ import {
 interface BOQItem {
   id: string;
   area: string; // e.g. "Master Bedroom"
+  category: string; // e.g. "งานตู้เสื้อผ้า & ห้องแต่งตัว (Wardrobe)"
+  subCategory: string; // e.g. "โครงตู้เสื้อผ้า (Wardrobe Carcass)"
   name: string; // e.g. "ตู้เสื้อผ้าบิวต์อิน"
   specs: string; // Specs description
   unit: string; // m, sq.m, job, pcs
@@ -45,10 +47,65 @@ interface BOQ {
   items: BOQItem[];
 }
 
+// Pre-defined categories and subcategories mapping for dropdowns
+const FURNITURE_CATEGORIES: Record<string, string[]> = {
+  'งานตู้เสื้อผ้า & ห้องแต่งตัว (Wardrobe)': [
+    'โครงตู้เสื้อผ้า (Wardrobe Carcass)',
+    'หน้าบานทึบ (Solid Door Panel)',
+    'หน้าบานกระจก/เฟรมอลูมิเนียม (Glass/Alu-Frame Door)',
+    'ลิ้นชักและฟังก์ชันภายใน (Internal Drawer & Accessories)',
+    'ราวแขวนและไฟ LED (Hanging Rails & LED Lights)',
+    'อื่นๆ (Other)'
+  ],
+  'งานครัว & โซนอาหาร (Kitchen & Dining)': [
+    'เคาน์เตอร์ตู้ล่าง (Base Cabinet - กันน้ำ/กันปลวก)',
+    'ตู้แขวนบน (Wall/Upper Cabinet)',
+    'ตู้สูงใส่อุปกรณ์ (Tall Cabinet / Larder)',
+    'หน้าบานตู้ครัว (Kitchen Door Panel)',
+    'ท็อปหินเคาน์เตอร์ครัว (Countertop Stone)',
+    'งานตะแกรงและอุปกรณ์ครัว (Kitchen Accessories)',
+    'อื่นๆ (Other)'
+  ],
+  'งานผนังตกแต่ง & บุหัวเตียง (Wall Paneling & Bedhead)': [
+    'โครงสร้างผนังเบา/โครงไม้ระแนง (Wall Structure & Battens)',
+    'ผนังกรุผิวลามิเนต/วีเนียร์ (Laminated/Veneer Paneling)',
+    'ผนังบุผ้า/หนังนุ่ม (Padded Fabric/Leather Paneling)',
+    'คิ้วสเตนเลส/กระจกเงาตกแต่ง (Stainless Trim & Mirror Accents)',
+    'อื่นๆ (Other)'
+  ],
+  'งานตู้วางทีวี & ตู้โชว์ (TV Console & Display)': [
+    'ตู้เตี้ยคอนโซลทีวี (TV Base Console)',
+    'ผนังกรุหลังทีวี (TV Back Panel / Feature Wall)',
+    'ตู้โชว์กระจกบานสูง (Tall Glass Display Cabinet)',
+    'ชั้นหิ้งโปร่ง/หิ้งพระ (Floating Shelves)',
+    'อื่นๆ (Other)'
+  ],
+  'งานโต๊ะเครื่องแป้ง & ตู้ห้องน้ำ (Vanity & Bathroom Cabinet)': [
+    'เคาน์เตอร์อ่างล้างหน้า (Bathroom Vanity Counter)',
+    'ตู้กระจกเงาเก็บของ (Mirror Cabinet)',
+    'โต๊ะเครื่องแป้งบิวต์อิน (Built-in Dressing Table)',
+    'อื่นๆ (Other)'
+  ],
+  'งานตกแต่งทางเข้า & ตู้รองเท้า (Foyer & Shoe Cabinet)': [
+    'ตู้เก็บรองเท้าบิวต์อิน (Built-in Shoe Cabinet)',
+    'โซนนั่งใส่รองเท้า/ผนังกรุกระจกเงา (Seat Bench & Foyer Mirror)',
+    'อื่นๆ (Other)'
+  ],
+  'งานตกแต่งภายในอื่นๆ (Other Built-in Items)': [
+    'โต๊ะทำงานบิวต์อิน (Built-in Desk)',
+    'ตู้เก็บของทั่วไป (General Storage Cabinet)',
+    'งานฝ้าและไฟแสงสว่าง (Ceiling & Lighting)',
+    'งานรื้อถอนและเตรียมหน้างาน (Demolition & Prep)',
+    'อื่นๆ (Other)'
+  ]
+};
+
 // Built-in furniture pre-defined templates for quick adding
 const FURNITURE_TEMPLATES = [
   {
     name: 'ตู้เสื้อผ้าบิวต์อิน (โครง HMR + หน้าบานลามิเนต)',
+    category: 'งานตู้เสื้อผ้า & ห้องแต่งตัว (Wardrobe)',
+    subCategory: 'โครงตู้เสื้อผ้า (Wardrobe Carcass)',
     specs: 'โครงสร้างไม้ HMR หนา 18มม. กันชื้นเกรด A, หน้าบานกรุลามิเนตลายไม้/สีพื้นเกรดนำเข้า, ราวแขวนผ้าแสตนเลส, บานพับ Soft-close (Hafele)',
     unit: 'เมตรวิ่ง',
     rate: 22000,
@@ -56,6 +113,8 @@ const FURNITURE_TEMPLATES = [
   },
   {
     name: 'ตู้เสื้อผ้าบิวต์อินหน้าบานกระจกเงาชาทองกรอบอลูมิเนียม',
+    category: 'งานตู้เสื้อผ้า & ห้องแต่งตัว (Wardrobe)',
+    subCategory: 'หน้าบานกระจก/เฟรมอลูมิเนียม (Glass/Alu-Frame Door)',
     specs: 'โครง HMR กันชื้นสีเทาชาร์โคล, หน้าบานกระจกเงาชาทองเจียรปริมกรอบอลูมิเนียมชุบสีทองอโนไดซ์, รางเลื่อนอลูมิเนียมแบรนด์เยอรมัน',
     unit: 'เมตรวิ่ง',
     rate: 26000,
@@ -63,6 +122,8 @@ const FURNITURE_TEMPLATES = [
   },
   {
     name: 'ผนังตกแต่งกรุกันเสียงหัวเตียง (Bedhead Wall Paneling)',
+    category: 'งานผนังตกแต่ง & บุหัวเตียง (Wall Paneling & Bedhead)',
+    subCategory: 'ผนังกรุผิวลามิเนต/วีเนียร์ (Laminated/Veneer Paneling)',
     specs: 'กรุไม้ MDF หุ้มด้วยฟองน้ำเกรดนุ่มพิเศษบุผ้าสังเคราะห์กันฝุ่นขลิบคิ้วสเตนเลสสีทองกระจกเงา สลับระแนงไม้เนื้อจริงสีวอลนัท',
     unit: 'ตร.ม.',
     rate: 4800,
@@ -70,6 +131,8 @@ const FURNITURE_TEMPLATES = [
   },
   {
     name: 'ตู้วางทีวีบิวต์อินพร้อมตู้โชว์กระจกสูงซ่อนไฟ LED',
+    category: 'งานตู้วางทีวี & ตู้โชว์ (TV Console & Display)',
+    subCategory: 'ตู้โชว์กระจกบานสูง (Tall Glass Display Cabinet)',
     specs: 'โครงไม้อัดยางกรุวีเนียร์พ่นสีลายไม้ธรรมชาติ สลับหินอ่อนสังเคราะห์หน้าตู้วางทีวี, บานพับเปิดเปิดกระจกใสเทมเปอร์กรอบอลูมิเนียมบางเฉียบซ่อน LED แสงวอร์ม',
     unit: 'เมตรวิ่ง',
     rate: 19500,
@@ -77,6 +140,8 @@ const FURNITURE_TEMPLATES = [
   },
   {
     name: 'เคาน์เตอร์ครัวล่าง (Base Kitchen Cabinet - กันน้ำ 100%)',
+    category: 'งานครัว & โซนอาหาร (Kitchen & Dining)',
+    subCategory: 'เคาน์เตอร์ตู้ล่าง (Base Cabinet - กันน้ำ/กันปลวก)',
     specs: 'โครงสร้างไม้อัดแท้เกรดพรีเมียม (Plywood) เคลือบฟิล์มกันน้ำ, หน้าบานลามิเนตทนรอยขีดข่วนและความร้อน, อุปกรณ์รางลิ้นชักรับใต้ระบบสองจังหวะดึงกลับอัตโนมัติ',
     unit: 'เมตรวิ่ง',
     rate: 16500,
@@ -84,6 +149,8 @@ const FURNITURE_TEMPLATES = [
   },
   {
     name: 'เคาน์เตอร์ครัวบน (Wall Kitchen Cabinet)',
+    category: 'งานครัว & โซนอาหาร (Kitchen & Dining)',
+    subCategory: 'ตู้แขวนบน (Wall/Upper Cabinet)',
     specs: 'โครงสร้างไม้ HMR, บานเปิดพ่นสีพ่นพรีเมียมไฮกลอส (High-Gloss Paint) ขัดละเอียด, บานพับ Soft-close พร้อมโช้คอัพบานยกไฮดรอลิก',
     unit: 'เมตรวิ่ง',
     rate: 13500,
@@ -91,6 +158,8 @@ const FURNITURE_TEMPLATES = [
   },
   {
     name: 'ท็อปหินควอตซ์เคาน์เตอร์ครัว (Quartz Stone Tabletop)',
+    category: 'งานครัว & โซนอาหาร (Kitchen & Dining)',
+    subCategory: 'ท็อปหินเคาน์เตอร์ครัว (Countertop Stone)',
     specs: 'หินควอตซ์สีขาวลายริ้วธรรมชาติ (Quartz Calacatta Marble Pattern) หนา 20มม. ทนรอยขีดข่วนทนคราบฝังแน่น เจาะช่องฝังอ่างล้างจานซ่อนใต้ท็อป',
     unit: 'เมตรวิ่ง',
     rate: 9000,
@@ -98,6 +167,8 @@ const FURNITURE_TEMPLATES = [
   },
   {
     name: 'ราวแขวนเสื้อผ้าอัจฉริยะพร้อมชุดไฟ LED Sensor',
+    category: 'งานตู้เสื้อผ้า & ห้องแต่งตัว (Wardrobe)',
+    subCategory: 'ราวแขวนและไฟ LED (Hanging Rails & LED Lights)',
     specs: 'ราวแขวนผ้าอลูมิเนียมซ่อนรางไฟ LED พร้อมเซนเซอร์เปิดอัตโนมัติเมื่อเปิดหน้าบาน แสงวอร์มไวท์ 3000K',
     unit: 'ชุด',
     rate: 3500,
@@ -121,6 +192,8 @@ const INITIAL_BOQS: BOQ[] = [
       {
         id: 'i1-1',
         area: 'Master Bedroom (ห้องนอนใหญ่)',
+        category: 'งานตู้เสื้อผ้า & ห้องแต่งตัว (Wardrobe)',
+        subCategory: 'หน้าบานกระจก/เฟรมอลูมิเนียม (Glass/Alu-Frame Door)',
         name: 'ตู้เสื้อผ้าบิวต์อินหน้าบานกระจกเงาชาทองกรอบอลูมิเนียม',
         specs: 'โครง HMR กันชื้นสีเทาชาร์โคล, หน้าบานกระจกเงาชาทองเจียรปริมกรอบอลูมิเนียมชุบสีทองอโนไดซ์, รางเลื่อนอลูมิเนียมแบรนด์เยอรมัน',
         unit: 'เมตรวิ่ง',
@@ -131,6 +204,8 @@ const INITIAL_BOQS: BOQ[] = [
       {
         id: 'i1-2',
         area: 'Master Bedroom (ห้องนอนใหญ่)',
+        category: 'งานผนังตกแต่ง & บุหัวเตียง (Wall Paneling & Bedhead)',
+        subCategory: 'ผนังกรุผิวลามิเนต/วีเนียร์ (Laminated/Veneer Paneling)',
         name: 'ผนังตกแต่งกรุกันเสียงหัวเตียง (Bedhead Wall Paneling)',
         specs: 'กรุไม้ MDF หุ้มด้วยฟองน้ำเกรดนุ่มพิเศษบุผ้าสังเคราะห์กันฝุ่นขลิบคิ้วสเตนเลสสีทองกระจกเงา สลับระแนงไม้เนื้อจริงสีวอลนัท',
         unit: 'ตร.ม.',
@@ -141,6 +216,8 @@ const INITIAL_BOQS: BOQ[] = [
       {
         id: 'i1-3',
         area: 'Living Room (ห้องนั่งเล่น)',
+        category: 'งานตู้วางทีวี & ตู้โชว์ (TV Console & Display)',
+        subCategory: 'ตู้โชว์กระจกบานสูง (Tall Glass Display Cabinet)',
         name: 'ตู้วางทีวีบิวต์อินพร้อมตู้โชว์กระจกสูงซ่อนไฟ LED',
         specs: 'โครงไม้อัดยางกรุวีเนียร์พ่นสีลายไม้ธรรมชาติ สลับหินอ่อนสังเคราะห์หน้าตู้วางทีวี, บานพับเปิดเปิดกระจกใสเทมเปอร์กรอบอลูมิเนียมบางเฉียบซ่อน LED แสงวอร์ม',
         unit: 'เมตรวิ่ง',
@@ -151,6 +228,8 @@ const INITIAL_BOQS: BOQ[] = [
       {
         id: 'i1-4',
         area: 'Kitchen Area (โซนครัวบิวต์อิน)',
+        category: 'งานครัว & โซนอาหาร (Kitchen & Dining)',
+        subCategory: 'เคาน์เตอร์ตู้ล่าง (Base Cabinet - กันน้ำ/กันปลวก)',
         name: 'เคาน์เตอร์ครัวล่าง (Base Kitchen Cabinet - กันน้ำ 100%)',
         specs: 'โครงสร้างไม้อัดแท้เกรดพรีเมียม (Plywood) เคลือบฟิล์มกันน้ำ, หน้าบานลามิเนตทนรอยขีดข่วนและความร้อน, อุปกรณ์รางลิ้นชักรับใต้ระบบสองจังหวะดึงกลับอัตโนมัติ',
         unit: 'เมตรวิ่ง',
@@ -161,6 +240,8 @@ const INITIAL_BOQS: BOQ[] = [
       {
         id: 'i1-5',
         area: 'Kitchen Area (โซนครัวบิวต์อิน)',
+        category: 'งานครัว & โซนอาหาร (Kitchen & Dining)',
+        subCategory: 'ตู้แขวนบน (Wall/Upper Cabinet)',
         name: 'เคาน์เตอร์ครัวบน (Wall Kitchen Cabinet)',
         specs: 'โครงสร้างไม้ HMR, บานเปิดพ่นสีพ่นพรีเมียมไฮกลอส (High-Gloss Paint) ขัดละเอียด, บานพับ Soft-close พร้อมโช้คอัพบานยกไฮดรอลิก',
         unit: 'เมตรวิ่ง',
@@ -171,6 +252,8 @@ const INITIAL_BOQS: BOQ[] = [
       {
         id: 'i1-6',
         area: 'Kitchen Area (โซนครัวบิวต์อิน)',
+        category: 'งานครัว & โซนอาหาร (Kitchen & Dining)',
+        subCategory: 'ท็อปหินเคาน์เตอร์ครัว (Countertop Stone)',
         name: 'ท็อปหินควอตซ์เคาน์เตอร์ครัว (Quartz Stone Tabletop)',
         specs: 'หินควอตซ์สีขาวลายริ้วธรรมชาติ (Quartz Calacatta Marble Pattern) หนา 20มม. ทนรอยขีดข่วนทนคราบฝังแน่น เจาะช่องฝังอ่างล้างจานซ่อนใต้ท็อป',
         unit: 'เมตรวิ่ง',
@@ -194,6 +277,8 @@ const INITIAL_BOQS: BOQ[] = [
       {
         id: 'i2-1',
         area: 'Living Room (ห้องรับแขกชั้น 1)',
+        category: 'งานตู้วางทีวี & ตู้โชว์ (TV Console & Display)',
+        subCategory: 'ตู้โชว์กระจกบานสูง (Tall Glass Display Cabinet)',
         name: 'ตู้วางทีวีบิวต์อินพร้อมตู้โชว์กระจกสูงซ่อนไฟ LED',
         specs: 'โครงไม้อัดยางกรุวีเนียร์พ่นสีลายไม้ธรรมชาติ สลับหินอ่อนสังเคราะห์หน้าตู้วางทีวี, บานพับเปิดเปิดกระจกใสเทมเปอร์กรอบอลูมิเนียมบางเฉียบซ่อน LED แสงวอร์ม',
         unit: 'เมตรวิ่ง',
@@ -204,8 +289,10 @@ const INITIAL_BOQS: BOQ[] = [
       {
         id: 'i2-2',
         area: 'Master Bedroom (ห้องนอนใหญ่ชั้น 2)',
+        category: 'งานตู้เสื้อผ้า & ห้องแต่งตัว (Wardrobe)',
+        subCategory: 'โครงตู้เสื้อผ้า (Wardrobe Carcass)',
         name: 'ตู้เสื้อผ้าบิวต์อิน (โครง HMR + หน้าบานลามิเนต)',
-        specs: 'โครงสร้างไม้ HMR หนา 18มม. กันชื้นเกรด A, หน้าบานกรุลามิเนตลายไม้/สีพื้นเกรดนำเข้า, ราวแขวนผ้าแสตนเลส, บานพับ Soft-close (Hafele)',
+        specs: 'โครงสร้างไม้ HMR หนา 18มม. กันชื้นเกรด A, หน้าบานกรุลามิเนตลายไม้/สีพื้นเกดนำเข้า, ราวแขวนผ้าแสตนเลส, บานพับ Soft-close (Hafele)',
         unit: 'เมตรวิ่ง',
         quantity: 4.0,
         rate: 22000,
@@ -237,6 +324,8 @@ export default function BOQPage() {
 
   // Item Form
   const [itemArea, setItemArea] = useState('');
+  const [itemCategory, setItemCategory] = useState('');
+  const [itemSubCategory, setItemSubCategory] = useState('');
   const [itemName, setItemName] = useState('');
   const [itemSpecs, setItemSpecs] = useState('');
   const [itemUnit, setItemUnit] = useState('เมตรวิ่ง');
@@ -305,6 +394,8 @@ export default function BOQPage() {
   const handleTemplateSelect = (index: number) => {
     const t = FURNITURE_TEMPLATES[index];
     setItemName(t.name);
+    setItemCategory(t.category);
+    setItemSubCategory(t.subCategory);
     setItemSpecs(t.specs);
     setItemUnit(t.unit);
     setItemRate(t.rate);
@@ -379,6 +470,8 @@ export default function BOQPage() {
     const newItem: BOQItem = {
       id: `i-${Date.now()}`,
       area: itemArea,
+      category: itemCategory || 'งานตกแต่งภายในอื่นๆ (Other Built-in Items)',
+      subCategory: itemSubCategory || 'อื่นๆ (Other)',
       name: itemName,
       specs: itemSpecs,
       unit: itemUnit,
@@ -416,6 +509,8 @@ export default function BOQPage() {
   const openEditItemModal = (item: BOQItem) => {
     setEditingItem(item);
     setItemArea(item.area);
+    setItemCategory(item.category || '');
+    setItemSubCategory(item.subCategory || '');
     setItemName(item.name);
     setItemSpecs(item.specs);
     setItemUnit(item.unit);
@@ -437,6 +532,8 @@ export default function BOQPage() {
             return {
               ...item,
               area: itemArea,
+              category: itemCategory || 'งานตกแต่งภายในอื่นๆ (Other Built-in Items)',
+              subCategory: itemSubCategory || 'อื่นๆ (Other)',
               name: itemName,
               specs: itemSpecs,
               unit: itemUnit,
@@ -461,6 +558,8 @@ export default function BOQPage() {
 
   const resetItemFields = () => {
     setItemArea('');
+    setItemCategory('');
+    setItemSubCategory('');
     setItemName('');
     setItemSpecs('');
     setItemUnit('เมตรวิ่ง');
@@ -715,8 +814,11 @@ export default function BOQPage() {
                     const roomProfit = roomSubtotal - roomCostSubtotal;
                     const roomMargin = roomSubtotal > 0 ? (roomProfit / roomSubtotal) * 100 : 0;
 
+                    // Get distinct categories in this room
+                    const categoriesInRoom = Array.from(new Set(roomItems.map(item => item.category || 'งานตกแต่งภายในอื่นๆ (Other Built-in Items)')));
+
                     return (
-                      <div key={roomName} className="space-y-3 min-w-[650px]">
+                      <div key={roomName} className="space-y-3 min-w-[650px] bg-[#12131a]/25 border border-[#1f212d]/40 p-4 rounded-2xl print:border-gray-200 print:p-0">
                         {/* Area Title */}
                         <div className="flex justify-between items-center border-b border-[#1f212d] pb-2 print:border-gray-200">
                           <h4 className="text-xs font-bold text-[#c5a880] print:text-black flex items-center gap-1.5">
@@ -751,41 +853,75 @@ export default function BOQPage() {
                               <th className="py-2.5 text-right w-16 print:hidden">การจัดการ</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-[#1f212d]/40 text-gray-300 print:divide-gray-200 print:text-black">
-                            {roomItems.map(item => (
-                              <tr key={item.id} className="hover:bg-white/5 transition-colors print:hover:bg-transparent">
-                                <td className="py-3 pl-2 pr-4">
-                                  <div className="font-bold text-white print:text-black text-xs leading-tight">{item.name}</div>
-                                  <div className="text-[9px] text-gray-500 print:text-gray-500 mt-1 leading-relaxed whitespace-pre-wrap">{item.specs}</div>
-                                </td>
-                                <td className="py-3 text-center text-gray-400 print:text-black">{item.unit}</td>
-                                <td className="py-3 text-center text-white print:text-black font-semibold font-mono">{item.quantity}</td>
-                                {viewMode === 'internal' && (
-                                  <>
-                                    <td className="py-3 text-right text-gray-400 font-mono">฿{item.costPerUnit.toLocaleString()}</td>
-                                    <td className="py-3 text-right text-gray-400 font-mono">฿{(item.quantity * item.costPerUnit).toLocaleString()}</td>
-                                  </>
-                                )}
-                                <td className="py-3 text-right text-gray-300 print:text-black font-mono">฿{item.rate.toLocaleString()}</td>
-                                <td className="py-3 text-right text-white print:text-black font-bold font-mono">฿{(item.quantity * item.rate).toLocaleString()}</td>
-                                <td className="py-3 text-right print:hidden">
-                                  <div className="flex items-center justify-end gap-1">
-                                    <button 
-                                      onClick={() => openEditItemModal(item)}
-                                      className="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-white"
-                                    >
-                                      <Edit2 className="w-3 h-3" />
-                                    </button>
-                                    <button 
-                                      onClick={() => handleDeleteItem(item.id)}
-                                      className="p-1 rounded hover:bg-red-950/40 text-gray-400 hover:text-red-400"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
+                          <tbody className="text-gray-300 print:text-black">
+                            {categoriesInRoom.map(catName => {
+                              const catItems = roomItems.filter(item => (item.category || 'งานตกแต่งภายในอื่นๆ (Other Built-in Items)') === catName);
+                              const catSubtotal = catItems.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
+                              const catCostSubtotal = catItems.reduce((sum, item) => sum + (item.quantity * item.costPerUnit), 0);
+                              const catProfit = catSubtotal - catCostSubtotal;
+                              const catMargin = catSubtotal > 0 ? (catProfit / catSubtotal) * 100 : 0;
+
+                              return (
+                                <React.Fragment key={catName}>
+                                  {/* Category Subheader Row */}
+                                  <tr className="bg-[#1c1d24]/50 border-b border-[#1f212d]/40 print:bg-gray-100/50 print:border-gray-200">
+                                    <td colSpan={viewMode === 'internal' ? 6 : 4} className="py-2 pl-2.5 pr-4 font-extrabold text-[9px] text-[#c5a880] print:text-black uppercase tracking-wider">
+                                      📁 {catName}
+                                      {viewMode === 'internal' && (
+                                        <span className="text-emerald-400 font-bold normal-case ml-2">
+                                          (มาร์กอัปหมวด: {((catSubtotal - catCostSubtotal) / (catCostSubtotal || 1) * 100).toFixed(0)}% | กำไร: ฿{catProfit.toLocaleString()})
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="py-2 text-right font-bold text-[9px] text-[#c5a880] print:text-black font-mono">
+                                      ฿{catSubtotal.toLocaleString()}
+                                    </td>
+                                    <td className="py-2 print:hidden"></td>
+                                  </tr>
+
+                                  {/* Items in this Category */}
+                                  {catItems.map(item => (
+                                    <tr key={item.id} className="hover:bg-white/5 border-b border-[#1f212d]/10 transition-colors print:hover:bg-transparent print:border-gray-100">
+                                      <td className="py-3 pl-4 pr-4 border-l-2 border-[#1f212d] hover:border-[#c5a880]/30">
+                                        <div className="font-bold text-white print:text-black text-xs leading-tight">{item.name}</div>
+                                        {item.subCategory && (
+                                          <span className="inline-block text-[8px] font-bold bg-[#1c1d24]/80 text-[#c5a880] px-1.5 py-0.5 rounded mt-1 border border-[#2d2f3d]/50 print:bg-gray-100 print:text-gray-600 print:border-gray-300">
+                                            {item.subCategory}
+                                          </span>
+                                        )}
+                                        <div className="text-[9px] text-gray-500 print:text-gray-500 mt-1 leading-relaxed whitespace-pre-wrap">{item.specs}</div>
+                                      </td>
+                                      <td className="py-3 text-center text-gray-400 print:text-black">{item.unit}</td>
+                                      <td className="py-3 text-center text-white print:text-black font-semibold font-mono">{item.quantity}</td>
+                                      {viewMode === 'internal' && (
+                                        <>
+                                          <td className="py-3 text-right text-gray-400 font-mono">฿{item.costPerUnit.toLocaleString()}</td>
+                                          <td className="py-3 text-right text-gray-400 font-mono">฿{(item.quantity * item.costPerUnit).toLocaleString()}</td>
+                                        </>
+                                      )}
+                                      <td className="py-3 text-right text-gray-300 print:text-black font-mono">฿{item.rate.toLocaleString()}</td>
+                                      <td className="py-3 text-right text-white print:text-black font-bold font-mono">฿{(item.quantity * item.rate).toLocaleString()}</td>
+                                      <td className="py-3 text-right print:hidden">
+                                        <div className="flex items-center justify-end gap-1">
+                                          <button 
+                                            onClick={() => openEditItemModal(item)}
+                                            className="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-white"
+                                          >
+                                            <Edit2 className="w-3 h-3" />
+                                          </button>
+                                          <button 
+                                            onClick={() => handleDeleteItem(item.id)}
+                                            className="p-1 rounded hover:bg-red-950/40 text-gray-400 hover:text-red-400"
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </React.Fragment>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -976,7 +1112,7 @@ export default function BOQPage() {
 
               <form onSubmit={handleAddItem} className="space-y-4 pt-2">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
+                  <div className="space-y-1 col-span-2 sm:col-span-1">
                     <label className="text-[10px] font-bold text-gray-400 uppercase">พื้นที่ / ห้อง (Area) *</label>
                     <input
                       type="text"
@@ -988,7 +1124,41 @@ export default function BOQPage() {
                     />
                   </div>
 
-                  <div className="space-y-1">
+                  <div className="space-y-1 col-span-2 sm:col-span-1">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase">หมวดหมู่เฟอร์นิเจอร์หลัก *</label>
+                    <select
+                      required
+                      value={itemCategory}
+                      onChange={e => {
+                        setItemCategory(e.target.value);
+                        const subs = FURNITURE_CATEGORIES[e.target.value] || [];
+                        setItemSubCategory(subs[0] || '');
+                      }}
+                      className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
+                    >
+                      <option value="" disabled>เลือกหมวดหลัก</option>
+                      {Object.keys(FURNITURE_CATEGORIES).map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1 col-span-2 sm:col-span-1">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase">หมวดย่อยของเฟอร์นิเจอร์ *</label>
+                    <select
+                      required
+                      value={itemSubCategory}
+                      onChange={e => setItemSubCategory(e.target.value)}
+                      className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
+                    >
+                      <option value="" disabled>เลือกหมวดย่อย</option>
+                      {(FURNITURE_CATEGORIES[itemCategory] || []).map(sub => (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1 col-span-2 sm:col-span-1">
                     <label className="text-[10px] font-bold text-gray-400 uppercase">ชื่อรายการงาน *</label>
                     <input
                       type="text"
@@ -1116,7 +1286,7 @@ export default function BOQPage() {
 
             <form onSubmit={handleSaveEditItem} className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
+                <div className="space-y-1 col-span-2 sm:col-span-1">
                   <label className="text-[10px] font-bold text-gray-400 uppercase">พื้นที่ / ห้อง (Area) *</label>
                   <input
                     type="text"
@@ -1127,7 +1297,41 @@ export default function BOQPage() {
                   />
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1 col-span-2 sm:col-span-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase">หมวดหมู่เฟอร์นิเจอร์หลัก *</label>
+                  <select
+                    required
+                    value={itemCategory}
+                    onChange={e => {
+                      setItemCategory(e.target.value);
+                      const subs = FURNITURE_CATEGORIES[e.target.value] || [];
+                      setItemSubCategory(subs[0] || '');
+                    }}
+                    className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
+                  >
+                    <option value="" disabled>เลือกหมวดหลัก</option>
+                    {Object.keys(FURNITURE_CATEGORIES).map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1 col-span-2 sm:col-span-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase">หมวดย่อยของเฟอร์นิเจอร์ *</label>
+                  <select
+                    required
+                    value={itemSubCategory}
+                    onChange={e => setItemSubCategory(e.target.value)}
+                    className="w-full bg-[#1c1d24] border border-[#2d2f3d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#c5a880] transition-colors"
+                  >
+                    <option value="" disabled>เลือกหมวดย่อย</option>
+                    {(FURNITURE_CATEGORIES[itemCategory] || []).map(sub => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1 col-span-2 sm:col-span-1">
                   <label className="text-[10px] font-bold text-gray-400 uppercase">ชื่อรายการงาน *</label>
                   <input
                     type="text"
