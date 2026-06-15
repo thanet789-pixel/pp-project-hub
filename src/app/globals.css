@@ -37,7 +37,7 @@ body {
   background-color: var(--background);
   background-image: 
     radial-gradient(circle at top, rgba(7, 8, 12, 0.72) 0%, rgba(7, 8, 12, 0.94) 80%, rgba(7, 8, 12, 0.98) 100%), 
-    url('/images/luxury_interior_bg.png');
+    url('/images/company_bg.jpg');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
