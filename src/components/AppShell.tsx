@@ -20,7 +20,8 @@ import {
   Menu, 
   X,
   ChevronDown,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Camera
 } from 'lucide-react';
 import { mockNotifications } from '@/lib/mockData';
 
@@ -92,6 +93,7 @@ export default function AppShell({ children }: AppShellProps) {
     { href: '/', label: 'หน้าหลัก', icon: Home },
     { href: '/projects', label: 'โปรเจกต์', icon: FolderOpen },
     { href: '/boq', label: 'ประมาณราคา BOQ', icon: FileSpreadsheet },
+    { href: '/portfolio', label: 'ผลงานบิวต์อิน', icon: Camera },
     { href: '/tasks', label: 'งานของฉัน', icon: CheckSquare },
     { href: '/calendar', label: 'ปฏิทิน', icon: Calendar },
     { href: '/messages', label: 'ข้อความ', icon: MessageSquare },
