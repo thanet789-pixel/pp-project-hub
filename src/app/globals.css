@@ -25,7 +25,21 @@
 
 /* Upscale base font size for better readability across all devices */
 html {
-  font-size: 112.5%; /* 1rem = 18px */
+  font-size: 125%; /* 1rem = 20px */
+}
+
+/* Ensure arbitrary tiny font classes are upscaled to be readable on all screens */
+.text-\[8px\] {
+  font-size: 0.6rem !important; /* ~12px at 125% base size */
+}
+.text-\[9px\] {
+  font-size: 0.65rem !important; /* ~13px at 125% base size */
+}
+.text-\[10px\] {
+  font-size: 0.72rem !important; /* ~14.4px at 125% base size */
+}
+.text-\[11px\] {
+  font-size: 0.78rem !important; /* ~15.6px at 125% base size */
 }
 
 :root {
