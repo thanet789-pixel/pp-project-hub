@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -33,6 +33,60 @@ export default function AppShell({ children }: AppShellProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [sidebarTheme, setSidebarTheme] = useState('obsidian');
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('app_sidebar_theme') || 'obsidian';
+    setSidebarTheme(savedTheme);
+
+    const handleStorageChange = () => {
+      const updated = localStorage.getItem('app_sidebar_theme') || 'obsidian';
+      setSidebarTheme(updated);
+    };
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('themeChange', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('themeChange', handleStorageChange);
+    };
+  }, []);
+
+  const getThemeClasses = () => {
+    switch (sidebarTheme) {
+      case 'navy':
+        return {
+          sidebar: 'bg-[#0f172a] border-r border-[#1e293b]',
+          header: 'bg-[#0f172a]/85 backdrop-blur-md border-b border-[#1e293b]',
+          mobileNav: 'bg-[#1e293b]/95 backdrop-blur-md border-t border-[#334155]',
+          mobileSidebar: 'bg-[#0f172a] border-r border-[#1e293b]'
+        };
+      case 'charcoal':
+        return {
+          sidebar: 'bg-[#18181b] border-r border-[#27272a]',
+          header: 'bg-[#18181b]/85 backdrop-blur-md border-b border-[#27272a]',
+          mobileNav: 'bg-[#27272a]/95 backdrop-blur-md border-t border-[#3f3f46]',
+          mobileSidebar: 'bg-[#18181b] border-r border-[#27272a]'
+        };
+      case 'glass':
+        return {
+          sidebar: 'bg-black/40 backdrop-blur-xl border-r border-white/10',
+          header: 'bg-black/25 backdrop-blur-md border-b border-white/10',
+          mobileNav: 'bg-black/60 backdrop-blur-xl border-t border-white/10',
+          mobileSidebar: 'bg-[#0f111a]/90 backdrop-blur-xl border-r border-white/10'
+        };
+      case 'obsidian':
+      default:
+        return {
+          sidebar: 'bg-[#0a0b10] border-r border-[#1a1c26]',
+          header: 'bg-[#0a0b10]/85 backdrop-blur-md border-b border-[#1a1c26]',
+          mobileNav: 'bg-[#0c0d12]/95 backdrop-blur-md border-t border-[#1f212d]',
+          mobileSidebar: 'bg-[#0c0d12] border-r border-[#1f212d]'
+        };
+    }
+  };
+
+  const theme = getThemeClasses();
 
   const menuItems = [
     { href: '/', label: 'หน้าหลัก', icon: Home },
@@ -61,7 +115,7 @@ export default function AppShell({ children }: AppShellProps) {
   return (
     <div className="flex h-screen bg-transparent overflow-hidden text-gray-200">
       {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex flex-col w-64 bg-[#0a0b10] border-r border-[#1a1c26] shrink-0">
+      <aside className={`hidden lg:flex flex-col w-64 shrink-0 transition-all duration-300 ${theme.sidebar}`}>
         {/* Brand Logo */}
         <div className="p-6 border-b border-[#1a1c26] flex flex-col items-center select-none">
           <div className="text-3xl font-extrabold tracking-widest gold-text-gradient font-outfit">
@@ -168,7 +222,7 @@ export default function AppShell({ children }: AppShellProps) {
       {/* Main Container */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-[#0a0b10]/85 backdrop-blur-md border-b border-[#1a1c26] flex items-center justify-between px-6 shrink-0 z-30 shadow-sm">
+        <header className={`h-16 flex items-center justify-between px-6 shrink-0 z-30 shadow-sm transition-all duration-300 ${theme.header}`}>
           <div className="flex items-center gap-4">
             {/* Mobile Menu Toggle */}
             <button 
@@ -270,7 +324,7 @@ export default function AppShell({ children }: AppShellProps) {
 
       {/* Mobile Bottom Navigation Bar */}
 
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0c0d12]/95 backdrop-blur-md border-t border-[#1f212d] z-40 flex items-center justify-around px-4 pb-safe shadow-lg">
+      <nav className={`lg:hidden fixed bottom-0 left-0 right-0 h-16 z-40 flex items-center justify-around px-4 pb-safe shadow-lg transition-all duration-300 ${theme.mobileNav}`}>
         {[
           { href: '/', label: 'หน้าหลัก', icon: Home },
           { href: '/projects', label: 'โปรเจกต์', icon: FolderOpen },
@@ -297,7 +351,7 @@ export default function AppShell({ children }: AppShellProps) {
       {/* Sidebar - Mobile drawer */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-64 bg-[#0c0d12] h-full flex flex-col border-r border-[#1f212d] animate-in slide-in-from-left duration-300">
+          <div className={`w-64 h-full flex flex-col animate-in slide-in-from-left duration-300 transition-all duration-300 ${theme.mobileSidebar}`}>
             <div className="p-4 border-b border-[#1f212d] flex items-center justify-between">
               <span className="text-lg font-bold text-[#c5a880] uppercase tracking-wider">PP Project Hub</span>
               <button 

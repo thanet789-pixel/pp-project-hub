@@ -4,9 +4,22 @@ import React, { useState } from 'react';
 import { Settings, Shield, Bell, Send, CheckCircle2, RefreshCw } from 'lucide-react';
 
 export default function SettingsPage() {
-  const [activeSubTab, setActiveSubTab] = useState<'profile' | 'notifications' | 'line'>('line');
+  const [activeSubTab, setActiveSubTab] = useState<'profile' | 'theme' | 'notifications' | 'line'>('theme');
   const [lineConnected, setLineConnected] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState('https://pp-project-hub.vercel.app/api/webhooks/line');
+  const [selectedTheme, setSelectedTheme] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('app_sidebar_theme') || 'obsidian';
+    }
+    return 'obsidian';
+  });
+
+  const handleThemeChange = (themeName: string) => {
+    setSelectedTheme(themeName);
+    localStorage.setItem('app_sidebar_theme', themeName);
+    // Notify same window instantly
+    window.dispatchEvent(new Event('themeChange'));
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -14,7 +27,7 @@ export default function SettingsPage() {
       {/* Header */}
       <div className="border-b border-[#1f212d] pb-4">
         <h2 className="text-lg font-bold text-white tracking-wide">ตั้งค่าระบบ</h2>
-        <p className="text-xs text-gray-400">จัดการโปรไฟล์บริษัท สิทธิ์การเข้าใช้งาน การแจ้งเตือน และการเชื่อมต่อบริการภายนอก</p>
+        <p className="text-xs text-gray-400">จัดการโปรไฟล์บริษัท ธีมสีระบบ การแจ้งเตือน และการเชื่อมต่อบริการภายนอก</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -23,6 +36,7 @@ export default function SettingsPage() {
         <div className="space-y-1">
           {[
             { key: 'profile', label: 'โปรไฟล์บริษัท' },
+            { key: 'theme', label: 'ธีมสีระบบ & เมนูบาร์' },
             { key: 'notifications', label: 'การแจ้งเตือนระบบ' },
             { key: 'line', label: 'LINE Integration & API' }
           ].map(sub => (
@@ -42,6 +56,73 @@ export default function SettingsPage() {
 
         {/* Right Settings panel (Span 3) */}
         <div className="lg:col-span-3">
+          
+          {/* THEME & APPEARANCE SETTINGS */}
+          {activeSubTab === 'theme' && (
+            <div className="p-6 rounded-2xl bg-[#12131a] border border-[#1f212d] space-y-6 animate-fadeIn">
+              <div>
+                <h3 className="text-sm font-bold text-white">ตั้งค่าธีมระบบ & เมนูบาร์ (System Theme & Sidebar)</h3>
+                <p className="text-xs text-gray-400 mt-1">เลือกเฉดสีของแถบเมนูบาร์ (Sidebar) และส่วนหัว (Header) ให้เหมาะกับสไตล์แบรนด์และความต้องการของคุณ</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  {
+                    key: 'obsidian',
+                    label: 'Classic Obsidian (ดำมืดคลาสสิก)',
+                    desc: 'ดีไซน์ดำหรูหราแบบดั้งเดิมของ PP Project Hub สะอาดและสงบตา',
+                    previewClass: 'bg-[#0a0b10] border-[#1a1c26]',
+                  },
+                  {
+                    key: 'navy',
+                    label: 'Royal Navy & Gold (น้ำเงินกรมท่าทอง)',
+                    desc: 'โทนสีน้ำเงินน้ำทะเลพรีเมียม ขับเน้นคู่สเปกสีทองคำและงานตกแต่งภายใน',
+                    previewClass: 'bg-[#0f172a] border-[#1e293b]',
+                  },
+                  {
+                    key: 'charcoal',
+                    label: 'Regal Charcoal (เทาชาโคลโมเดิร์น)',
+                    desc: 'โทนสีเทาดำเข้มสไตล์ลอฟท์/สถาปัตยกรรมโมเดิร์นคลาสสิก',
+                    previewClass: 'bg-[#18181b] border-[#27272a]',
+                  },
+                  {
+                    key: 'glass',
+                    label: 'Glassmorphism Translucent (โปร่งใสลอยตัว)',
+                    desc: 'พื้นหลังซีทรูแบบกระจกฝ้า แสดงภาพพื้นหลัง Parallax ลายพิมพ์เขียวของแอป',
+                    previewClass: 'bg-black/40 backdrop-blur-md border-white/10',
+                  },
+                ].map(themeItem => (
+                  <button
+                    key={themeItem.key}
+                    type="button"
+                    onClick={() => handleThemeChange(themeItem.key)}
+                    className={`p-4 rounded-xl text-left border transition-all duration-300 relative flex flex-col justify-between h-32 ${
+                      selectedTheme === themeItem.key
+                        ? 'border-[#c5a880] bg-[#c5a880]/5 shadow-lg shadow-[#c5a880]/5'
+                        : 'border-[#1f212d] hover:border-gray-600 bg-[#171821]/30 hover:bg-[#171821]/50'
+                    }`}
+                  >
+                    <div>
+                      <span className="text-xs font-bold text-white block">{themeItem.label}</span>
+                      <span className="text-[10px] text-gray-500 block mt-1 leading-relaxed">{themeItem.desc}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between w-full mt-2 pt-2 border-t border-[#1f212d]/50">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] text-gray-400">ตัวอย่าง:</span>
+                        <div className={`w-8 h-4 rounded border ${themeItem.previewClass}`} />
+                      </div>
+                      {selectedTheme === themeItem.key && (
+                        <span className="text-[9px] font-extrabold text-[#c5a880] uppercase tracking-wider bg-[#c5a880]/15 px-2 py-0.5 rounded-md border border-[#c5a880]/30 animate-pulse">
+                          ใช้งานอยู่
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           
           {/* PROFILE SETTINGS */}
           {activeSubTab === 'profile' && (
