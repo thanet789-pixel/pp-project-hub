@@ -15,7 +15,9 @@ import {
   Check, 
   Info,
   Maximize2,
-  Trash
+  Trash,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { mockProjects } from '@/lib/mockData';
 import { Project } from '@/lib/types';
@@ -309,7 +311,6 @@ export default function BuiltInPortfolio() {
       }
     }
   };
-
   // Filters calculation
   const filteredPortfolio = portfolio.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -319,6 +320,27 @@ export default function BuiltInPortfolio() {
     const matchesCategory = selectedCategoryFilter === 'all' || item.category === selectedCategoryFilter;
     return matchesSearch && matchesProject && matchesCategory;
   });
+  const handlePrevPortfolioItem = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!viewingItem) return;
+    const idx = filteredPortfolio.findIndex(item => item.id === viewingItem.id);
+    if (idx > 0) {
+      setViewingItem(filteredPortfolio[idx - 1]);
+    } else {
+      setViewingItem(filteredPortfolio[filteredPortfolio.length - 1]);
+    }
+  };
+
+  const handleNextPortfolioItem = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!viewingItem) return;
+    const idx = filteredPortfolio.findIndex(item => item.id === viewingItem.id);
+    if (idx < filteredPortfolio.length - 1) {
+      setViewingItem(filteredPortfolio[idx + 1]);
+    } else {
+      setViewingItem(filteredPortfolio[0]);
+    }
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -689,12 +711,30 @@ export default function BuiltInPortfolio() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-fadeIn cursor-zoom-out"
           onClick={() => setViewingItem(null)}
         >
+          {/* Navigation Controls - Desktop Left */}
+          <button 
+            type="button"
+            onClick={handlePrevPortfolioItem}
+            className="absolute left-6 top-1/2 -translate-y-1/2 z-50 p-2.5 rounded-full bg-black/60 border border-white/10 hover:border-white text-gray-400 hover:text-white transition-all hidden md:block"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+
+          {/* Navigation Controls - Desktop Right */}
+          <button 
+            type="button"
+            onClick={handleNextPortfolioItem}
+            className="absolute right-6 top-1/2 -translate-y-1/2 z-50 p-2.5 rounded-full bg-black/60 border border-white/10 hover:border-white text-gray-400 hover:text-white transition-all hidden md:block"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+
           <div 
-            className="w-full max-w-4xl bg-[#0a0b10] border border-[#1f212d] rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh] cursor-default animate-scaleUp"
+            className="w-full max-w-4xl bg-[#0a0b10] border border-[#1f212d] rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh] cursor-default animate-scaleUp relative"
             onClick={(e) => e.stopPropagation()} // prevent closing
           >
             {/* Large Image side */}
-            <div className="flex-1 bg-black flex items-center justify-center overflow-hidden relative min-h-[300px] md:min-h-0">
+            <div className="flex-1 bg-black flex items-center justify-center overflow-hidden relative min-h-[300px] md:min-h-[450px]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
                 src={viewingItem.imageUrl} 
@@ -702,6 +742,24 @@ export default function BuiltInPortfolio() {
                 className="w-full h-full object-contain max-h-[50vh] md:max-h-[80vh]"
               />
               
+              {/* Mobile quick controls overlay */}
+              <div className="absolute inset-x-0 bottom-4 flex justify-between px-4 md:hidden">
+                <button
+                  type="button"
+                  onClick={handlePrevPortfolioItem}
+                  className="px-4 py-2 rounded-xl bg-black/80 border border-white/10 text-white text-xs font-bold"
+                >
+                  ◀ ก่อนหน้า
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextPortfolioItem}
+                  className="px-4 py-2 rounded-xl bg-black/80 border border-white/10 text-white text-xs font-bold"
+                >
+                  ถัดไป ▶
+                </button>
+              </div>
+
               {/* Top bar indicators */}
               <div className="absolute top-4 left-4 flex gap-1">
                 <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-[#d4af37] text-black border border-[#d4af37]/20 shadow-md">
