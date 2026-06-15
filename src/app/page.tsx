@@ -94,80 +94,104 @@ export default function Dashboard() {
         {/* Card: Total Projects */}
         <Link 
           href="/projects" 
-          className="p-5 rounded-2xl glass-card glass-card-hover group cursor-pointer block"
+          className="p-5 rounded-2xl glass-card glass-card-hover group cursor-pointer block relative overflow-hidden transition-all duration-300 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5),0_0_20px_-5px_rgba(212,175,55,0.15)] hover:border-[#d4af37]/40"
         >
-          <div className="flex items-center justify-between">
-            <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 group-hover:scale-105 transition-transform duration-300">
+          {/* Subtle grid and ambient glow */}
+          <div className="absolute inset-0 bg-[radial-gradient(#ffffff03_1px,transparent_1px)] [background-size:12px_12px] opacity-60 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#d4af37]/5 to-transparent rounded-bl-full pointer-events-none group-hover:from-[#d4af37]/10 transition-colors" />
+          
+          <div className="flex items-center justify-between relative z-10">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-[#d4af37]/15 to-[#c5a880]/5 text-[#d4af37] border border-[#d4af37]/25 shadow-[0_0_12px_rgba(212,175,55,0.15)] group-hover:scale-110 transition-transform duration-300">
               <Folder className="w-5 h-5" />
             </div>
-            <div className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
+            <div className="flex items-center gap-1 text-[9px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold">
               <ArrowUpRight className="w-3 h-3" />
               <span>↑ 2 สัปดาห์นี้</span>
             </div>
           </div>
-          <div className="mt-4">
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">โปรเจกต์ทั้งหมด</p>
-            <h3 className="text-xl font-extrabold text-white mt-1">18 <span className="text-xs font-normal text-gray-400">โครงการ</span></h3>
+          <div className="mt-5 relative z-10">
+            <p className="text-[9px] text-[#c5a880] font-extrabold uppercase tracking-wider">โปรเจกต์ทั้งหมด</p>
+            <h3 className="text-2xl font-extrabold text-white mt-1.5 tracking-tight flex items-baseline gap-1.5">
+              18 <span className="text-xs font-medium text-gray-500">โครงการ</span>
+            </h3>
           </div>
         </Link>
 
         {/* Card: Active Tasks */}
         <Link 
           href="/tasks" 
-          className="p-5 rounded-2xl glass-card glass-card-hover group cursor-pointer block"
+          className="p-5 rounded-2xl glass-card glass-card-hover group cursor-pointer block relative overflow-hidden transition-all duration-300 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5),0_0_20px_-5px_rgba(59,130,246,0.15)] hover:border-blue-500/40"
         >
-          <div className="flex items-center justify-between">
-            <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 group-hover:scale-105 transition-transform duration-300">
+          {/* Subtle grid and ambient glow */}
+          <div className="absolute inset-0 bg-[radial-gradient(#ffffff03_1px,transparent_1px)] [background-size:12px_12px] opacity-60 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-500/5 to-transparent rounded-bl-full pointer-events-none group-hover:from-blue-500/10 transition-colors" />
+          
+          <div className="flex items-center justify-between relative z-10">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/15 to-cyan-500/5 text-blue-400 border border-blue-500/25 shadow-[0_0_12px_rgba(59,130,246,0.15)] group-hover:scale-110 transition-transform duration-300">
               <Activity className="w-5 h-5" />
             </div>
-            <div className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
+            <div className="flex items-center gap-1 text-[9px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold">
               <ArrowUpRight className="w-3 h-3" />
               <span>↑ 5 งานใหม่</span>
             </div>
           </div>
-          <div className="mt-4">
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">งานกำลังทำ</p>
-            <h3 className="text-xl font-extrabold text-white mt-1">24 <span className="text-xs font-normal text-gray-400">งาน</span></h3>
+          <div className="mt-5 relative z-10">
+            <p className="text-[9px] text-blue-400 font-extrabold uppercase tracking-wider">งานกำลังทำ</p>
+            <h3 className="text-2xl font-extrabold text-white mt-1.5 tracking-tight flex items-baseline gap-1.5">
+              24 <span className="text-xs font-medium text-gray-500">งาน</span>
+            </h3>
           </div>
         </Link>
 
         {/* Card: Delayed Tasks */}
         <Link 
           href="/tasks" 
-          className="p-5 rounded-2xl glass-card glass-card-hover group cursor-pointer block"
+          className="p-5 rounded-2xl glass-card glass-card-hover group cursor-pointer block relative overflow-hidden transition-all duration-300 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5),0_0_20px_-5px_rgba(244,63,94,0.15)] hover:border-rose-500/40"
         >
-          <div className="flex items-center justify-between">
-            <div className="p-3 rounded-xl bg-rose-500/10 text-rose-400 group-hover:scale-105 transition-transform duration-300">
+          {/* Subtle grid and ambient glow */}
+          <div className="absolute inset-0 bg-[radial-gradient(#ffffff03_1px,transparent_1px)] [background-size:12px_12px] opacity-60 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-rose-500/5 to-transparent rounded-bl-full pointer-events-none group-hover:from-rose-500/10 transition-colors" />
+          
+          <div className="flex items-center justify-between relative z-10">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-rose-500/15 to-pink-500/5 text-rose-400 border border-rose-500/25 shadow-[0_0_12px_rgba(239,68,68,0.15)] group-hover:scale-110 transition-transform duration-300">
               <Clock className="w-5 h-5" />
             </div>
-            <div className="flex items-center gap-1 text-[10px] text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full font-bold">
+            <div className="flex items-center gap-1 text-[9px] text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-0.5 rounded-full font-bold">
               <ArrowDownRight className="w-3 h-3" />
               <span>↓ 1 งานค้าง</span>
             </div>
           </div>
-          <div className="mt-4">
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">งานล่าช้า</p>
-            <h3 className="text-xl font-extrabold text-white mt-1">3 <span className="text-xs font-normal text-gray-400">งาน</span></h3>
+          <div className="mt-5 relative z-10">
+            <p className="text-[9px] text-rose-400 font-extrabold uppercase tracking-wider">งานล่าช้า</p>
+            <h3 className="text-2xl font-extrabold text-white mt-1.5 tracking-tight flex items-baseline gap-1.5">
+              3 <span className="text-xs font-medium text-gray-500">งาน</span>
+            </h3>
           </div>
         </Link>
 
         {/* Card: Completed Tasks */}
         <Link 
           href="/tasks" 
-          className="p-5 rounded-2xl glass-card glass-card-hover group cursor-pointer block"
+          className="p-5 rounded-2xl glass-card glass-card-hover group cursor-pointer block relative overflow-hidden transition-all duration-300 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5),0_0_20px_-5px_rgba(16,185,129,0.15)] hover:border-emerald-500/40"
         >
-          <div className="flex items-center justify-between">
-            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 group-hover:scale-105 transition-transform duration-300">
+          {/* Subtle grid and ambient glow */}
+          <div className="absolute inset-0 bg-[radial-gradient(#ffffff03_1px,transparent_1px)] [background-size:12px_12px] opacity-60 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-emerald-500/5 to-transparent rounded-bl-full pointer-events-none group-hover:from-emerald-500/10 transition-colors" />
+          
+          <div className="flex items-center justify-between relative z-10">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/15 to-teal-500/5 text-emerald-400 border border-emerald-500/25 shadow-[0_0_12px_rgba(16,185,129,0.15)] group-hover:scale-110 transition-transform duration-300">
               <CheckCircle2 className="w-5 h-5" />
             </div>
-            <div className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
+            <div className="flex items-center gap-1 text-[9px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold">
               <ArrowUpRight className="w-3 h-3" />
               <span>↑ 12 สำเร็จ</span>
             </div>
           </div>
-          <div className="mt-4">
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">เสร็จสมบูรณ์</p>
-            <h3 className="text-xl font-extrabold text-white mt-1">56 <span className="text-xs font-normal text-gray-400">งาน</span></h3>
+          <div className="mt-5 relative z-10">
+            <p className="text-[9px] text-emerald-400 font-extrabold uppercase tracking-wider">เสร็จสมบูรณ์</p>
+            <h3 className="text-2xl font-extrabold text-white mt-1.5 tracking-tight flex items-baseline gap-1.5">
+              56 <span className="text-xs font-medium text-gray-500">งาน</span>
+            </h3>
           </div>
         </Link>
 
