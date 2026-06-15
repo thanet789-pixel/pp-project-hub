@@ -51,7 +51,7 @@ body {
   background-color: var(--background);
   background-image: 
     radial-gradient(circle at top, rgba(7, 8, 12, 0.35) 0%, rgba(7, 8, 12, 0.72) 60%, rgba(7, 8, 12, 0.92) 100%), 
-    url('/images/company_bg.jpg');
+    var(--app-bg-image, url('/images/company_bg.jpg'));
   background-size: cover;
   background-position: center;
   background-attachment: fixed;

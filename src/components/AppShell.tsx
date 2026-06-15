@@ -80,6 +80,27 @@ export default function AppShell({ children }: AppShellProps) {
     };
   }, []);
 
+  useEffect(() => {
+    const applyBgImage = () => {
+      const savedBg = localStorage.getItem('app_active_bg_image');
+      if (savedBg) {
+        document.documentElement.style.setProperty('--app-bg-image', `url(${savedBg})`);
+      } else {
+        document.documentElement.style.removeProperty('--app-bg-image');
+      }
+    };
+
+    applyBgImage();
+
+    window.addEventListener('bgImageChange', applyBgImage);
+    window.addEventListener('storage', applyBgImage);
+
+    return () => {
+      window.removeEventListener('bgImageChange', applyBgImage);
+      window.removeEventListener('storage', applyBgImage);
+    };
+  }, []);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#07090e] font-prompt">

@@ -1,9 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, Shield, Bell, Send, CheckCircle2, RefreshCw, Info } from 'lucide-react';
 import { Project } from '@/lib/types';
 import { mockProjects } from '@/lib/mockData';
+
+interface CustomBg {
+  id: string;
+  name: string;
+  dataUrl: string;
+}
 
 export default function SettingsPage() {
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'theme' | 'notifications' | 'line'>('theme');
@@ -62,6 +68,142 @@ export default function SettingsPage() {
     setProjects(updatedProjects);
     localStorage.setItem('pp_projects', JSON.stringify(updatedProjects));
     alert('บันทึกการเชื่อมต่อ LINE Group สำเร็จ!');
+  };
+
+  // --- Background Image Management States & Handlers ---
+  const [activeBgImage, setActiveBgImage] = useState<string>('');
+  const [customBgList, setCustomBgList] = useState<CustomBg[]>([]);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    const savedActiveBg = localStorage.getItem('app_active_bg_image') || '';
+    setActiveBgImage(savedActiveBg);
+
+    const savedCustomBgs = localStorage.getItem('app_custom_bg_list');
+    if (savedCustomBgs) {
+      try {
+        setCustomBgList(JSON.parse(savedCustomBgs));
+      } catch (e) {
+        setCustomBgList([]);
+      }
+    }
+  }, []);
+
+  const handleSelectBg = (bgUrl: string) => {
+    setActiveBgImage(bgUrl);
+    if (bgUrl) {
+      localStorage.setItem('app_active_bg_image', bgUrl);
+    } else {
+      localStorage.removeItem('app_active_bg_image');
+    }
+    window.dispatchEvent(new Event('bgImageChange'));
+  };
+
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Resize to max 1600px width/height to keep resolution clean but size small
+          const MAX_SIZE = 1600;
+          if (width > MAX_SIZE || height > MAX_SIZE) {
+            if (width > height) {
+              height = Math.round((height * MAX_SIZE) / width);
+              width = MAX_SIZE;
+            } else {
+              width = Math.round((width * MAX_SIZE) / height);
+              height = MAX_SIZE;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Canvas context not available'));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Start with quality 0.75 and compress to stay under 500KB
+          let quality = 0.75;
+          let dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+          // Approximate size of dataurl base64 is length * 0.75
+          while (dataUrl.length * 0.75 > 500000 && quality > 0.1) {
+            quality -= 0.1;
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+
+          resolve(dataUrl);
+        };
+        img.onerror = (err) => reject(err);
+      };
+      reader.onerror = (err) => reject(err);
+    });
+  };
+
+  const handleUploadBg = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const compressedUrl = await compressImage(file);
+      
+      const newBg: CustomBg = {
+        id: Date.now().toString(),
+        name: file.name.split('.').slice(0, -1).join('.') || 'ภาพพื้นหลังใหม่',
+        dataUrl: compressedUrl,
+      };
+
+      const updatedList = [...customBgList, newBg];
+      setCustomBgList(updatedList);
+      localStorage.setItem('app_custom_bg_list', JSON.stringify(updatedList));
+
+      // Auto select the uploaded background
+      handleSelectBg(compressedUrl);
+      
+      // Reset input value
+      e.target.value = '';
+    } catch (err) {
+      console.error('Error uploading/compressing image:', err);
+      alert('เกิดข้อผิดพลาดในการประมวลผลไฟล์รูปภาพ กรุณาลองใหม่อีกครั้ง');
+    }
+  };
+
+  const handleDeleteBg = (id: string, dataUrl: string) => {
+    if (!confirm('คุณต้องการลบภาพพื้นหลังนี้ใช่หรือไม่?')) return;
+
+    const updatedList = customBgList.filter(bg => bg.id !== id);
+    setCustomBgList(updatedList);
+    localStorage.setItem('app_custom_bg_list', JSON.stringify(updatedList));
+
+    if (activeBgImage === dataUrl) {
+      handleSelectBg('');
+    }
+  };
+
+  const handleRenameBg = (id: string, currentName: string) => {
+    const newName = prompt('ระบุชื่อภาพพื้นหลังใหม่:', currentName);
+    if (newName === null || newName.trim() === '') return;
+
+    const updatedList = customBgList.map(bg => {
+      if (bg.id === id) {
+        return { ...bg, name: newName.trim() };
+      }
+      return bg;
+    });
+    setCustomBgList(updatedList);
+    localStorage.setItem('app_custom_bg_list', JSON.stringify(updatedList));
   };
 
   return (
@@ -163,6 +305,154 @@ export default function SettingsPage() {
                     </div>
                   </button>
                 ))}
+              </div>
+
+              <hr className="border-[#1f212d]" />
+
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-bold text-white">การจัดการภาพพื้นหลังระบบ (System Background Image)</h3>
+                  <p className="text-xs text-gray-400 mt-1">อัปโหลด ลบ หรือสลับเปลี่ยนภาพพื้นหลังโครงการของคุณ โดยระบบจะบีบอัดรูปภาพให้เร็วและคมชัดโดยอัตโนมัติ</p>
+                </div>
+
+                {/* Upload Button */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-[#161720]/40 p-4 rounded-xl border border-[#1f212d]">
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold text-white block">อัปโหลดภาพพื้นหลังส่วนตัว</span>
+                    <span className="text-[10px] text-gray-500 block">รองรับ JPG/PNG ระบบบีบอัดภาพไม่เกิน 500KB อัตโนมัติ</span>
+                  </div>
+                  <label className="cursor-pointer py-2 px-4 rounded-lg bg-[#c5a880] hover:bg-[#b0936b] text-black font-bold text-xs transition-colors shrink-0">
+                    เลือกไฟล์รูปภาพ...
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleUploadBg} 
+                      className="hidden" 
+                    />
+                  </label>
+                </div>
+
+                {/* Background Grid */}
+                <div className="space-y-3">
+                  <span className="text-[11px] font-bold text-gray-400 block uppercase tracking-wide">ภาพพื้นหลังทั้งหมดในระบบ:</span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    
+                    {/* Preset 1 (Default Obsidian) */}
+                    <div 
+                      onClick={() => handleSelectBg('')}
+                      className={`p-2 rounded-xl border cursor-pointer hover:border-gray-500 transition-all flex flex-col justify-between h-36 ${
+                        activeBgImage === '' 
+                          ? 'border-[#c5a880] bg-[#c5a880]/5' 
+                          : 'border-[#1f212d] bg-[#171821]/30'
+                      }`}
+                    >
+                      <div className="w-full h-20 rounded-lg overflow-hidden bg-gray-900 border border-gray-800">
+                        <img src="/images/company_bg.jpg" className="w-full h-full object-cover" alt="Obsidian" />
+                      </div>
+                      <div className="pt-2 text-center">
+                        <span className="text-[10px] font-bold text-white block">Classic Obsidian</span>
+                        <span className="text-[8px] text-gray-500 block mt-0.5">ภาพตั้งต้นระบบ</span>
+                      </div>
+                    </div>
+
+                    {/* Preset 2 (Concrete Blueprint) */}
+                    <div 
+                      onClick={() => handleSelectBg('/images/luxury_interior_bg.png')}
+                      className={`p-2 rounded-xl border cursor-pointer hover:border-gray-500 transition-all flex flex-col justify-between h-36 ${
+                        activeBgImage === '/images/luxury_interior_bg.png' 
+                          ? 'border-[#c5a880] bg-[#c5a880]/5' 
+                          : 'border-[#1f212d] bg-[#171821]/30'
+                      }`}
+                    >
+                      <div className="w-full h-20 rounded-lg overflow-hidden bg-gray-900 border border-gray-800">
+                        <img src="/images/luxury_interior_bg.png" className="w-full h-full object-cover" alt="Blueprint" />
+                      </div>
+                      <div className="pt-2 text-center">
+                        <span className="text-[10px] font-bold text-white block">Concrete Blueprint</span>
+                        <span className="text-[8px] text-gray-500 block mt-0.5">พิมพ์เขียวสุดหรู</span>
+                      </div>
+                    </div>
+
+                    {/* Preset 3 (Walk-in Closet) */}
+                    <div 
+                      onClick={() => handleSelectBg('/images/luxury_walkin_closet.png')}
+                      className={`p-2 rounded-xl border cursor-pointer hover:border-gray-500 transition-all flex flex-col justify-between h-36 ${
+                        activeBgImage === '/images/luxury_walkin_closet.png' 
+                          ? 'border-[#c5a880] bg-[#c5a880]/5' 
+                          : 'border-[#1f212d] bg-[#171821]/30'
+                      }`}
+                    >
+                      <div className="w-full h-20 rounded-lg overflow-hidden bg-gray-900 border border-gray-800">
+                        <img src="/images/luxury_walkin_closet.png" className="w-full h-full object-cover" alt="Closet" />
+                      </div>
+                      <div className="pt-2 text-center">
+                        <span className="text-[10px] font-bold text-white block">Walk-in Closet</span>
+                        <span className="text-[8px] text-gray-500 block mt-0.5">ภาพห้องแต่งตัว</span>
+                      </div>
+                    </div>
+
+                    {/* Preset 4 (TV Console) */}
+                    <div 
+                      onClick={() => handleSelectBg('/images/luxury_tv_console.png')}
+                      className={`p-2 rounded-xl border cursor-pointer hover:border-gray-500 transition-all flex flex-col justify-between h-36 ${
+                        activeBgImage === '/images/luxury_tv_console.png' 
+                          ? 'border-[#c5a880] bg-[#c5a880]/5' 
+                          : 'border-[#1f212d] bg-[#171821]/30'
+                      }`}
+                    >
+                      <div className="w-full h-20 rounded-lg overflow-hidden bg-gray-900 border border-gray-800">
+                        <img src="/images/luxury_tv_console.png" className="w-full h-full object-cover" alt="Console" />
+                      </div>
+                      <div className="pt-2 text-center">
+                        <span className="text-[10px] font-bold text-white block">TV Console Marble</span>
+                        <span className="text-[8px] text-gray-500 block mt-0.5">ชั้นวางทีวีหินอ่อน</span>
+                      </div>
+                    </div>
+
+                    {/* Custom Uploaded Backgrounds */}
+                    {customBgList.map((bg) => (
+                      <div 
+                        key={bg.id}
+                        className={`p-2 rounded-xl border relative group/bg flex flex-col justify-between h-36 ${
+                          activeBgImage === bg.dataUrl 
+                            ? 'border-[#c5a880] bg-[#c5a880]/5' 
+                            : 'border-[#1f212d] bg-[#171821]/30'
+                        }`}
+                      >
+                        <div 
+                          onClick={() => handleSelectBg(bg.dataUrl)}
+                          className="w-full h-20 rounded-lg overflow-hidden bg-gray-900 border border-gray-800 cursor-pointer"
+                        >
+                          <img src={bg.dataUrl} className="w-full h-full object-cover" alt={bg.name} />
+                        </div>
+                        <div className="pt-2 text-center relative">
+                          <span className="text-[10px] font-bold text-white block truncate px-4">{bg.name}</span>
+                          
+                          {/* Hover Actions */}
+                          <div className="absolute inset-x-0 bottom-0 bg-[#090a10]/95 flex items-center justify-center gap-2 opacity-0 group-hover/bg:opacity-100 transition-opacity py-0.5">
+                            <button 
+                              type="button" 
+                              onClick={() => handleRenameBg(bg.id, bg.name)}
+                              className="text-[9px] text-[#c5a880] hover:underline font-bold"
+                            >
+                              แก้ไขชื่อ
+                            </button>
+                            <span className="text-gray-700 text-[9px]">•</span>
+                            <button 
+                              type="button" 
+                              onClick={() => handleDeleteBg(bg.id, bg.dataUrl)}
+                              className="text-[9px] text-rose-400 hover:underline font-bold"
+                            >
+                              ลบภาพ
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                  </div>
+                </div>
+
               </div>
             </div>
           )}
