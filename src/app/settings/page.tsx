@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Settings, Shield, Bell, Send, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Settings, Shield, Bell, Send, CheckCircle2, RefreshCw, Info } from 'lucide-react';
+import { Project } from '@/lib/types';
+import { mockProjects } from '@/lib/mockData';
 
 export default function SettingsPage() {
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'theme' | 'notifications' | 'line'>('theme');
@@ -19,6 +21,47 @@ export default function SettingsPage() {
     localStorage.setItem('app_sidebar_theme', themeName);
     // Notify same window instantly
     window.dispatchEvent(new Event('themeChange'));
+  };
+
+  const [projects, setProjects] = useState<Project[]>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('pp_projects');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    }
+    return mockProjects;
+  });
+
+  const [projLineGroupIds, setProjLineGroupIds] = useState<Record<string, string>>(() => {
+    const initialIds: Record<string, string> = {};
+    projects.forEach(p => {
+      initialIds[p.id] = p.lineGroupId || '';
+    });
+    return initialIds;
+  });
+
+  const handleProjectLineIdChange = (projId: string, value: string) => {
+    setProjLineGroupIds(prev => ({
+      ...prev,
+      [projId]: value
+    }));
+  };
+
+  const handleSaveProjectLineId = (projId: string) => {
+    const updatedLineGroupId = projLineGroupIds[projId] || '';
+    
+    // Update projects state
+    const updatedProjects = projects.map(p => {
+      if (p.id === projId) {
+        return { ...p, lineGroupId: updatedLineGroupId };
+      }
+      return p;
+    });
+
+    setProjects(updatedProjects);
+    localStorage.setItem('pp_projects', JSON.stringify(updatedProjects));
+    alert('บันทึกการเชื่อมต่อ LINE Group สำเร็จ!');
   };
 
   return (
@@ -236,8 +279,69 @@ export default function SettingsPage() {
 
               <div className="flex gap-3 justify-end pt-4 border-t border-[#1f212d]">
                 <button className="px-4 py-2 rounded-lg bg-[#c5a880] text-black font-semibold text-xs hover:bg-[#b0936b]">
-                  บันทึกการตั้งค่า
+                  บันทึกการตั้งค่าทั่วไป
                 </button>
+              </div>
+
+              {/* Project LINE Connections */}
+              <div className="pt-6 border-t border-[#1f212d] space-y-4">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#c5a880]">
+                    เชื่อมต่อ LINE Group ID รายโครงการ (Project LINE Group Connections)
+                  </h4>
+                  <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">
+                    กำหนด LINE Group ID สำหรับแต่ละโครงการ เพื่อให้ระบบ LINE Bot ดึงภาพถ่ายความคืบหน้าหน้างานและรายงานเหตุการณ์ต่าง ๆ เข้ามายังไทม์ไลน์และแกลเลอรีของโครงการนั้น ๆ ได้อย่างถูกต้อง
+                  </p>
+                </div>
+
+                <div className="space-y-2.5">
+                  {projects.map((proj) => (
+                    <div 
+                      key={proj.id} 
+                      className="p-4 rounded-xl bg-[#161720]/80 border border-[#2b2e3e] flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <span className="text-xs font-bold text-white block truncate">{proj.name}</span>
+                        <span className="text-[10px] text-gray-500 block mt-0.5 truncate">📍 {proj.address}</span>
+                      </div>
+
+                      <div className="flex gap-2 shrink-0 w-full md:w-auto">
+                        <input 
+                          type="text" 
+                          value={projLineGroupIds[proj.id] || ''}
+                          onChange={(e) => handleProjectLineIdChange(proj.id, e.target.value)}
+                          placeholder="กรอกรหัสกลุ่ม LINE เช่น C87654..."
+                          className="px-3 py-1.5 rounded-lg bg-[#1a1c25] border border-[#2b2e3e] text-xs text-white font-mono w-full md:w-64 focus:outline-none focus:border-[#c5a880] transition-colors" 
+                        />
+                        <button 
+                          onClick={() => handleSaveProjectLineId(proj.id)}
+                          className="px-3.5 py-1.5 rounded-lg bg-[#c5a880] hover:bg-[#b0936b] text-black font-bold text-xs whitespace-nowrap transition-colors"
+                        >
+                          บันทึกเชื่อมต่อ
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Helpful guides on how to get the Group ID */}
+                <div className="p-4 rounded-xl bg-[#14161e] border border-[#1f212d] space-y-3">
+                  <div className="flex items-center gap-2 text-[#c5a880] text-xs font-bold">
+                    <Info className="w-4 h-4 shrink-0" />
+                    <span>💡 วิธีการดึงรหัส LINE Group ID เพื่อมาเชื่อมโยงโครงการ</span>
+                  </div>
+                  <ol className="text-[11px] text-gray-400 space-y-2 list-decimal pl-4 leading-relaxed">
+                    <li>
+                      <strong>ดึงบอทเข้ากลุ่ม</strong>: ตรวจสอบว่าได้เชิญ LINE Bot เข้าไปในกลุ่ม LINE ของช่างติดตั้งหน้างานแล้ว
+                    </li>
+                    <li>
+                      <strong>พิมพ์ข้อความกระตุ้น</strong>: พิมพ์คำว่า <code className="text-white font-mono bg-[#1f212d] px-1 py-0.5 rounded">#ID</code> หรือ <code className="text-white font-mono bg-[#1f212d] px-1 py-0.5 rounded">@check</code> ส่งเข้าไปในห้องแชทกลุ่มนั้นๆ
+                    </li>
+                    <li>
+                      <strong>คัดลอกรหัสกลุ่ม</strong>: บอทจะตอบกลับข้อความพร้อมรหัสกลุ่มขึ้นต้นด้วยตัว <code className="text-[#c5a880] font-mono bg-[#1f212d] px-1 py-0.5 rounded">C</code> (เช่น <code className="text-white font-mono bg-[#1f212d] px-1.5 py-0.5 rounded">C876543210abcdef...</code>) แล้วนำมาใส่และกดบันทึกในช่องด้านบนนี้
+                    </li>
+                  </ol>
+                </div>
               </div>
 
             </div>

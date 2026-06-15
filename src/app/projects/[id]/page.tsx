@@ -42,21 +42,38 @@ export default function ProjectDetail() {
   const params = useParams();
   const projectId = params?.id as string || 'p1';
 
-  // Find project
-  const project = mockProjects.find(p => p.id === projectId) || mockProjects[0];
+  // Find project with dynamic sync from localStorage
+  const [project, setProject] = useState<Project>(() => {
+    return mockProjects.find(p => p.id === projectId) || mockProjects[0];
+  });
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('pp_projects');
+      if (stored) {
+        const parsed = JSON.parse(stored) as Project[];
+        const found = parsed.find(p => p.id === projectId);
+        if (found) {
+          setProject(found);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load project from localStorage', e);
+    }
+  }, [projectId]);
 
   // Active tab state
   const [activeTab, setActiveTab] = useState<'overview' | 'timeline' | 'tasks' | 'photos' | 'files' | 'team' | 'budget' | 'ai' | 'reports'>('photos');
 
   // Interactive timeline state
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>(
-    mockTimelineEvents.filter(e => e.projectId === project.id)
+    mockTimelineEvents.filter(e => e.projectId === projectId)
   );
   const [postText, setPostText] = useState('');
 
   // Interactive tasks state
   const [tasks, setTasks] = useState<Task[]>(
-    mockTasks.filter(t => t.projectId === project.id)
+    mockTasks.filter(t => t.projectId === projectId)
   );
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -64,9 +81,9 @@ export default function ProjectDetail() {
   // Dynamic progress calculated from tasks
   const [projectProgress, setProjectProgress] = useState(project.progress);
 
-  // LINE Group ID configuration states
-  const [lineGroupIdState, setLineGroupIdState] = useState(project.lineGroupId || '');
-  const [showSaveToast, setShowSaveToast] = useState(false);
+  useEffect(() => {
+    setProjectProgress(project.progress);
+  }, [project.progress]);
 
   // Photos gallery lightbox states
   const [projectPhotos, setProjectPhotos] = useState<{ url: string; title: string; desc: string; area: string }[]>([]);
@@ -205,14 +222,7 @@ export default function ProjectDetail() {
     setProjectPhotos(combined);
   }, [project.id, project.coverUrl, project.name, supabasePhotos]);
 
-  const handleSaveLineGroupId = (e: React.FormEvent) => {
-    e.preventDefault();
-    project.lineGroupId = lineGroupIdState;
-    setShowSaveToast(true);
-    setTimeout(() => {
-      setShowSaveToast(false);
-    }, 3000);
-  };
+  // handleSaveLineGroupId removed - configuration moved to Settings Page
 
 
   useEffect(() => {
@@ -462,7 +472,7 @@ export default function ProjectDetail() {
         supabase.removeChannel(channel);
       }
     };
-  }, [project.id, project.lineGroupId, showSaveToast]);
+  }, [project.id, project.lineGroupId]);
 
   useEffect(() => {
     // Recalculate progress based on checked tasks for demo completeness
@@ -833,16 +843,7 @@ export default function ProjectDetail() {
           {activeTab === 'overview' && (
             <div className="space-y-6 animate-in fade-in duration-300">
               
-              {/* Save Success Banner */}
-              {showSaveToast && (
-                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
-                  <div>
-                    <span className="text-xs font-bold text-white block">บันทึกข้อมูลการเชื่อมต่อสำเร็จ!</span>
-                    <span className="text-[10px] text-gray-400 block mt-0.5">เชื่อมต่อโปรเจกต์กับกลุ่ม LINE ID เรียบร้อยแล้ว ระบบพร้อมดึงภาพถ่ายเข้าไทม์ไลน์โดยอัตโนมัติ</span>
-                  </div>
-                </div>
-              )}
+              {/* Save Success Banner removed */}
 
               {/* Project Meta Details Card */}
               <div className="p-6 rounded-2xl bg-[#12131a] border border-[#1f212d] space-y-4">
@@ -892,73 +893,7 @@ export default function ProjectDetail() {
                 </div>
               </div>
 
-              {/* LINE Group Integration Configuration Card */}
-              <div className="p-6 rounded-2xl bg-[#12131a] border border-[#1f212d] space-y-5">
-                <div className="flex items-center justify-between border-b border-[#1f212d] pb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full bg-[#06c755] flex items-center justify-center text-white font-extrabold text-[10px] select-none">
-                      L
-                    </div>
-                    <h3 className="text-sm font-bold text-white">เชื่อมต่อ LINE Group ID</h3>
-                  </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold ${
-                    lineGroupIdState 
-                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                      : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                  }`}>
-                    {lineGroupIdState ? 'เชื่อมต่อแล้ว' : 'ยังไม่ได้เชื่อมต่อ'}
-                  </span>
-                </div>
-
-                <p className="text-xs text-gray-400 leading-relaxed">
-                  นำรหัสกลุ่ม LINE (Group ID) เช่น <code className="text-[#c5a880] font-mono bg-[#14161e] px-1.5 py-0.5 rounded">Cabcde123...</code> ที่ได้จากบอทหรือเซิร์ฟเวอร์ มากรอกในช่องด้านล่างนี้ เพื่อให้รูปรายงานหน้างานเชื่อมเข้าสู่แท็บรูปภาพและไทม์ไลน์ของโปรเจกต์นี้โดยตรง
-                </p>
-
-                <form onSubmit={handleSaveLineGroupId} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-400 mb-1.5">LINE Group ID ของกลุ่มไลน์โครงการ *</label>
-                    <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        value={lineGroupIdState}
-                        onChange={(e) => setLineGroupIdState(e.target.value)}
-                        placeholder="กรอกรหัสกลุ่ม LINE เช่น C876543210abcdef..."
-                        className="w-full px-3.5 py-2 rounded-xl bg-[#1a1c25] border border-[#2b2e3e] text-xs text-white font-mono focus:outline-none focus:border-[#c5a880] transition-colors placeholder-gray-600" 
-                        required
-                      />
-                      <button 
-                        type="submit"
-                        className="py-2 px-5 rounded-xl bg-[#c5a880] hover:bg-[#b0936b] text-black font-bold text-xs whitespace-nowrap transition-colors"
-                      >
-                        บันทึกการเชื่อมต่อ
-                      </button>
-                    </div>
-                  </div>
-                </form>
-
-                {/* Helpful guides on how to get the Group ID */}
-                <div className="p-4 rounded-xl bg-[#14161e] border border-[#1f212d] space-y-3">
-                  <div className="flex items-center gap-2 text-[#c5a880] text-xs font-bold">
-                    <Info className="w-4 h-4 shrink-0" />
-                    <span>💡 วิธีการดึงรหัส LINE Group ID เพื่อมาเชื่อมโยงโครงการ</span>
-                  </div>
-                  <ol className="text-xs text-gray-400 space-y-2 list-decimal pl-4 leading-relaxed">
-                    <li>
-                      <strong>ดึงบอทเข้ากลุ่ม</strong>: ตรวจสอบว่าเชิญ LINE Bot เข้าไปใน LINE Group ของช่างหน้างานแล้ว
-                    </li>
-                    <li>
-                      <strong>พิมพ์ข้อความกระตุ้น</strong>: พิมพ์คำว่า <code className="text-white font-mono bg-[#1f212d] px-1 py-0.5 rounded">#ID</code> หรือ <code className="text-white font-mono bg-[#1f212d] px-1 py-0.5 rounded">@check</code> ส่งเข้าไปในห้องแชทกลุ่มนั้นๆ
-                    </li>
-                    <li>
-                      <strong>คัดลอกรหัสกลุ่ม</strong>: บอทจะตอบกลับข้อความพร้อมรหัสกลุ่มขึ้นต้นด้วยตัว <code className="text-[#c5a880] font-mono bg-[#1f212d] px-1 py-0.5 rounded">C</code> (เช่น <code className="text-white font-mono bg-[#1f212d] px-1.5 py-0.5 rounded">C876543210abcdef...</code>) หรือสามารถเปิดดูได้จาก Vercel Realtime Logs ของ Webhook API
-                    </li>
-                    <li>
-                      <strong>บันทึกระบบ</strong>: คัดลอกรหัสนั้นมาใส่ในช่องด้านบนนี้แล้วกด <strong className="text-white">"บันทึกการเชื่อมต่อ"</strong> เพื่อเสร็จสิ้นขั้นตอน
-                    </li>
-                  </ol>
-                </div>
-
-              </div>
+              {/* LINE Group Integration Card removed - Moved to Settings Page */}
 
             </div>
           )}
