@@ -84,7 +84,7 @@ export default function AppShell({ children }: AppShellProps) {
     const applyBgImage = () => {
       const savedBg = localStorage.getItem('app_active_bg_image');
       if (savedBg) {
-        document.documentElement.style.setProperty('--app-bg-image', `url(${savedBg})`);
+        document.documentElement.style.setProperty('--app-bg-image', `url("${savedBg}")`);
       } else {
         document.documentElement.style.removeProperty('--app-bg-image');
       }
