@@ -34,7 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="th"
       className={`${outfit.variable} ${inter.variable} ${prompt.variable} h-full antialiased`}
     >
       <body className="min-h-full text-foreground font-sans antialiased selection:bg-gold-400/30 selection:text-white">

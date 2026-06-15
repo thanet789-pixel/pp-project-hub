@@ -58,14 +58,14 @@ body {
   background-repeat: no-repeat;
   color: var(--foreground);
   font-family: var(--font-sans);
-  letter-spacing: -0.01em;
+  letter-spacing: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 /* Luxury visual headings enhancements */
 h1, h2, h3, h4, h5, h6 {
-  letter-spacing: -0.02em;
+  letter-spacing: normal;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
