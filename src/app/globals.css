@@ -13,23 +13,23 @@
   --color-gold-900: #553a1a;
   --color-gold-950: #311f0c;
 
-  --color-luxury-bg: #090a0f;
-  --color-luxury-card: #12131a;
-  --color-luxury-border: #1f212d;
-  --color-luxury-hover: #181a24;
+  --color-luxury-bg: #07080c;
+  --color-luxury-card: #101118;
+  --color-luxury-border: #1a1c26;
+  --color-luxury-hover: #151722;
   --color-luxury-accent: #c5a880;
-  --color-luxury-muted: #8e94a0;
+  --color-luxury-muted: #808694;
 
   --font-sans: var(--font-prompt), var(--font-outfit), var(--font-inter), system-ui, -apple-system, sans-serif;
 }
 
 /* Upscale base font size for better readability across all devices */
 html {
-  font-size: 112.5%; /* 1rem = 18px (up from 16px) */
+  font-size: 112.5%; /* 1rem = 18px */
 }
 
 :root {
-  --background: #090a0f;
+  --background: #07080c;
   --foreground: #eaecef;
 }
 
@@ -54,12 +54,101 @@ h1, h2, h3, h4, h5, h6 {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #090a0f;
+  background: #07080c;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e202b;
+  background: #181a24;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #c5a880;
+}
+
+/* Premium Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.96) translateY(4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0.8; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 15px -3px rgba(197, 168, 128, 0.15); }
+  50% { box-shadow: 0 0 25px 2px rgba(197, 168, 128, 0.3); }
+}
+
+@keyframes shimer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Class utilities for design system enhancement */
+.animate-fadeIn {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scaleUp {
+  animation: scaleUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.glass-card {
+  background: rgba(16, 17, 24, 0.65);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.glass-card-hover {
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-hover:hover {
+  background: rgba(22, 24, 34, 0.8);
+  border-color: rgba(197, 168, 128, 0.3);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), 0 0 20px -5px rgba(197, 168, 128, 0.08);
+  transform: translateY(-3px);
+}
+
+.glass-modal {
+  background: rgba(14, 15, 21, 0.9);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.gold-gradient-bg {
+  background: linear-gradient(135deg, #d4af37 0%, #c5a880 50%, #b39265 100%);
+}
+
+.gold-text-gradient {
+  background: linear-gradient(to right, #f5eccd, #d4af37, #c5a880, #f5eccd);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimer 15s linear infinite;
+}
+
+.gold-glow-hover:hover {
+  animation: pulseGlow 2s infinite;
+}
+
+.glow-btn-active:active {
+  transform: scale(0.97);
 }
