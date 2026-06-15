@@ -19,7 +19,8 @@ import {
   Search, 
   Menu, 
   X,
-  ChevronDown
+  ChevronDown,
+  FileSpreadsheet
 } from 'lucide-react';
 import { mockNotifications } from '@/lib/mockData';
 
@@ -36,6 +37,7 @@ export default function AppShell({ children }: AppShellProps) {
   const menuItems = [
     { href: '/', label: 'หน้าหลัก', icon: Home },
     { href: '/projects', label: 'โปรเจกต์', icon: FolderOpen },
+    { href: '/boq', label: 'ประมาณราคา BOQ', icon: FileSpreadsheet },
     { href: '/tasks', label: 'งานของฉัน', icon: CheckSquare },
     { href: '/calendar', label: 'ปฏิทิน', icon: Calendar },
     { href: '/messages', label: 'ข้อความ', icon: MessageSquare },
