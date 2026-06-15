@@ -255,37 +255,52 @@ export default function AppShell({ children }: AppShellProps) {
               </button>
 
               {isNotificationsOpen && (
-                <div className="absolute right-0 mt-2.5 w-80 glass-modal rounded-xl shadow-2xl z-50 p-4 animate-scaleUp">
-                  <div className="flex items-center justify-between pb-2 border-b border-[#1a1c26] mb-2.5">
-                    <span className="text-xs font-extrabold text-white">การแจ้งเตือนล่าสุด</span>
-                    <button className="text-[10px] text-[#c5a880] hover:underline font-bold">
-                      อ่านทั้งหมด
-                    </button>
-                  </div>
-                  <div className="space-y-2.5 max-h-60 overflow-y-auto scrollbar-thin">
-                    {mockNotifications.map(item => (
-                      <div 
-                        key={item.id} 
-                        className={`p-2.5 rounded-xl border text-xs transition-all duration-300 ${
-                          item.isRead ? 'bg-transparent border-transparent' : 'bg-[#181b26]/30 border-[#1a1c26] hover:bg-[#181b26]/50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className={`font-extrabold text-[8px] px-1.5 py-0.5 rounded border ${
-                            item.type === 'warning' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                            item.type === 'alert' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                            'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                          }`}>
-                            {item.type === 'warning' ? 'ด่วนที่สุด' : item.type === 'alert' ? 'เตือนภัย' : 'ทั่วไป'}
-                          </span>
-                          <span className="text-[9px] text-gray-500">10 นาทีที่แล้ว</span>
-                        </div>
-                        <p className="font-bold text-gray-200 mb-0.5">{item.title}</p>
-                        <p className="text-gray-400 text-[10px] leading-relaxed">{item.message}</p>
+                <>
+                  {/* Invisible backdrop for desktop, dim overlay for mobile to close when clicking outside */}
+                  <div 
+                    className="fixed inset-0 z-40 bg-black/50 md:bg-transparent"
+                    onClick={() => setIsNotificationsOpen(false)}
+                  />
+                  <div className="fixed inset-x-4 top-20 md:absolute md:inset-auto md:right-0 md:top-auto md:mt-2.5 w-[calc(100vw-2rem)] md:w-80 glass-modal rounded-2xl shadow-2xl z-50 p-5 animate-scaleUp">
+                    <div className="flex items-center justify-between pb-2.5 border-b border-[#1a1c26] mb-3">
+                      <span className="text-xs font-extrabold text-white">การแจ้งเตือนล่าสุด</span>
+                      <div className="flex items-center gap-3">
+                        <button className="text-[10px] text-[#c5a880] hover:underline font-bold">
+                          อ่านทั้งหมด
+                        </button>
+                        <button 
+                          onClick={() => setIsNotificationsOpen(false)}
+                          className="text-gray-400 hover:text-white md:hidden"
+                        >
+                          <X className="w-4.5 h-4.5" />
+                        </button>
                       </div>
-                    ))}
+                    </div>
+                    <div className="space-y-2.5 max-h-[50vh] md:max-h-60 overflow-y-auto scrollbar-thin">
+                      {mockNotifications.map(item => (
+                        <div 
+                          key={item.id} 
+                          className={`p-2.5 rounded-xl border text-xs transition-all duration-300 ${
+                            item.isRead ? 'bg-transparent border-transparent' : 'bg-[#181b26]/30 border-[#1a1c26] hover:bg-[#181b26]/50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className={`font-extrabold text-[8px] px-1.5 py-0.5 rounded border ${
+                              item.type === 'warning' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                              item.type === 'alert' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                              'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                            }`}>
+                              {item.type === 'warning' ? 'ด่วนที่สุด' : item.type === 'alert' ? 'เตือนภัย' : 'ทั่วไป'}
+                            </span>
+                            <span className="text-[9px] text-gray-500">10 นาทีที่แล้ว</span>
+                          </div>
+                          <p className="font-bold text-gray-200 mb-0.5">{item.title}</p>
+                          <p className="text-gray-400 text-[10px] leading-relaxed">{item.message}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                </>
               )}
             </div>
 
