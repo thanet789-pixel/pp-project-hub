@@ -21,37 +21,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching user session on mount
-    // Default to the PM/Owner profile for prototype convenience
-    const sessionUser = mockUsers.find(u => u.role === 'owner') || mockUsers[0];
-    setUser(sessionUser);
-    setIsLoading(false);
+    // Check if user session exists in localStorage
+    try {
+      const stored = localStorage.getItem('pp_auth_user');
+      if (stored) {
+        setUser(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error('Failed to restore session:', e);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   const loginWithEmail = async (email: string) => {
     setIsLoading(true);
-    const matched = mockUsers.find(u => u.email === email) || mockUsers[0];
+    // Find matching user or fallback to owner
+    const matched = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase()) || mockUsers[0];
     setUser(matched);
+    localStorage.setItem('pp_auth_user', JSON.stringify(matched));
     setIsLoading(false);
   };
 
   const loginWithGoogle = async () => {
     setIsLoading(true);
-    // Login as default PM
-    setUser(mockUsers[1]);
+    const matched = mockUsers[1]; // PM
+    setUser(matched);
+    localStorage.setItem('pp_auth_user', JSON.stringify(matched));
     setIsLoading(false);
   };
 
   const loginWithLine = async () => {
     setIsLoading(true);
-    // Login as Installer for demo variety
-    setUser(mockUsers[4]);
+    const matched = mockUsers[4]; // Installer
+    setUser(matched);
+    localStorage.setItem('pp_auth_user', JSON.stringify(matched));
     setIsLoading(false);
   };
 
   const logout = async () => {
     setIsLoading(true);
     setUser(null);
+    localStorage.removeItem('pp_auth_user');
     setIsLoading(false);
   };
 

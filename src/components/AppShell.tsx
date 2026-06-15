@@ -24,6 +24,32 @@ import {
   Camera
 } from 'lucide-react';
 import { mockNotifications } from '@/lib/mockData';
+import { useAuth } from '@/lib/authContext';
+import LoginPage from './LoginPage';
+
+const getRoleLabelThai = (role: string | null) => {
+  if (!role) return '';
+  switch (role) {
+    case 'owner':
+      return 'เจ้าของบริษัท';
+    case 'pm':
+      return 'ผู้จัดการโครงการ (PM)';
+    case 'designer':
+      return 'ดีไซน์เนอร์';
+    case 'factory':
+      return 'ช่างโรงงาน';
+    case 'installer':
+      return 'ช่างติดตั้ง';
+    case 'contractor':
+      return 'ผู้รับเหมาช่วง';
+    case 'customer':
+      return 'ลูกค้า';
+    case 'admin':
+      return 'ผู้ดูแลระบบ';
+    default:
+      return role;
+  }
+};
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -31,6 +57,7 @@ interface AppShellProps {
 
 export default function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
+  const { user, isLoading, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -52,6 +79,21 @@ export default function AppShell({ children }: AppShellProps) {
       window.removeEventListener('themeChange', handleStorageChange);
     };
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#07090e] font-prompt">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-[#c5a880]/30 border-t-[#c5a880] rounded-full animate-spin"></div>
+          <span className="text-xs text-gray-400 font-medium">กำลังโหลดระบบ...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage />;
+  }
 
   const getThemeClasses = () => {
     switch (sidebarTheme) {
@@ -164,16 +206,16 @@ export default function AppShell({ children }: AppShellProps) {
 
         {/* User Profile */}
         <div className="p-4 border-t border-[#1a1c26] bg-[#090a0f]/40 flex items-center justify-between group relative">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#d4af37] to-[#c5a880] p-[1px]">
-              <div className="w-full h-full rounded-full bg-[#0a0b10] flex items-center justify-center font-bold text-white text-xs">
-                กพ
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#d4af37] to-[#c5a880] p-[1px] shrink-0">
+              <div className="w-full h-full rounded-full bg-[#0a0b10] flex items-center justify-center font-bold text-white text-xs select-none">
+                {user ? user.fullName.substring(0, 2) : ''}
               </div>
             </div>
 
-            <div>
-              <div className="text-xs font-bold text-white">กฤษดา พรหมเมือง</div>
-              <div className="text-[10px] text-[#c5a880] font-semibold mt-0.5">เจ้าของบริษัท</div>
+            <div className="min-w-0">
+              <div className="text-xs font-bold text-white truncate">{user?.fullName}</div>
+              <div className="text-[10px] text-[#c5a880] font-semibold mt-0.5 truncate">{getRoleLabelThai(user?.role || null)}</div>
             </div>
           </div>
           <button 
@@ -188,12 +230,18 @@ export default function AppShell({ children }: AppShellProps) {
             <div className="absolute bottom-16 left-4 w-48 glass-modal rounded-xl shadow-2xl p-2 z-50 animate-scaleUp">
               <div className="px-3 py-2 border-b border-[#1a1c26] mb-1">
                 <p className="text-[9px] text-gray-500 font-bold uppercase">เข้าใช้งานโดย</p>
-                <p className="text-[10px] font-extrabold text-[#c5a880] truncate">owner@ppprojecthub.com</p>
+                <p className="text-[10px] font-extrabold text-[#c5a880] truncate">{user?.email}</p>
               </div>
               <Link href="/settings" onClick={() => setIsProfileOpen(false)} className="block px-3 py-2 text-xs text-gray-300 hover:bg-white/5 rounded-lg font-medium transition-colors">
                 ตั้งค่าบัญชี
               </Link>
-              <button onClick={() => alert('Log out simulated')} className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 rounded-lg font-medium transition-colors">
+              <button 
+                onClick={() => {
+                  setIsProfileOpen(false);
+                  logout();
+                }} 
+                className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 rounded-lg font-medium transition-colors"
+              >
                 ออกจากระบบ
               </button>
             </div>
@@ -307,7 +355,7 @@ export default function AppShell({ children }: AppShellProps) {
             {/* Profile Avatar Header */}
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#d4af37] to-[#c5a880] p-[1px] cursor-pointer active:scale-95 transition-transform" onClick={() => setIsProfileOpen(!isProfileOpen)}>
               <div className="w-full h-full rounded-full bg-[#0a0b10] flex items-center justify-center font-bold text-[#c5a880] text-xs select-none">
-                ก
+                {user ? user.fullName.substring(0, 1) : ''}
               </div>
             </div>
           </div>
@@ -382,14 +430,27 @@ export default function AppShell({ children }: AppShellProps) {
             </nav>
 
             {/* Mobile User Profile */}
-            <div className="p-4 border-t border-[#1f212d] flex items-center gap-3 bg-[#0c0d12]/50">
-              <div className="w-8 h-8 rounded-full bg-[#c5a880] flex items-center justify-center font-bold text-black text-xs">
-                ก
+            <div className="p-4 border-t border-[#1f212d] flex items-center justify-between bg-[#0c0d12]/50">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#d4af37] to-[#c5a880] p-[1px]">
+                  <div className="w-full h-full rounded-full bg-[#0a0b10] flex items-center justify-center font-bold text-[#c5a880] text-xs">
+                    {user ? user.fullName.substring(0, 1) : ''}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white">{user?.fullName}</div>
+                  <div className="text-[10px] text-[#c5a880]">{getRoleLabelThai(user?.role || null)}</div>
+                </div>
               </div>
-              <div>
-                <div className="text-xs font-bold text-white">กฤษดา พรหมเมือง</div>
-                <div className="text-[10px] text-[#c5a880]">เจ้าของบริษัท</div>
-              </div>
+              <button 
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  logout();
+                }}
+                className="text-[10px] text-red-400 font-semibold bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-lg"
+              >
+                ออกจากระบบ
+              </button>
             </div>
           </div>
         </div>
