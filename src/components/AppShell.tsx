@@ -160,26 +160,6 @@ export default function AppShell({ children }: AppShellProps) {
           })}
         </nav>
 
-        {/* LINE Integration Widget */}
-        <div className="p-4 mx-4 mb-4 rounded-2xl bg-gradient-to-b from-[#13141c] to-[#0a0b10] border border-[#1a1c26] shadow-md">
-          <div className="flex items-center gap-2 mb-2">
-            {/* Custom LINE green logo */}
-            <div className="w-5.5 h-5.5 rounded-full bg-[#06c755] flex items-center justify-center text-white font-extrabold text-[10px] select-none">
-              L
-            </div>
-            <div className="text-xs font-bold text-white">เชื่อมต่อ LINE Group</div>
-          </div>
-          <p className="text-[10px] text-gray-400 mb-3 leading-relaxed">
-            รับส่งข้อมูลภาพความคืบหน้าหน้างาน และรับสรุปแจ้งเตือนประจำวันจาก LINE
-          </p>
-          <Link 
-            href="/settings" 
-            className="block w-full py-2 px-3 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#c5a880] text-black font-bold text-[10px] text-center hover:opacity-90 active:scale-95 transition-all shadow-md shadow-[#d4af37]/10"
-          >
-            เชื่อมต่อเลย
-          </Link>
-        </div>
-
         {/* User Profile */}
         <div className="p-4 border-t border-[#1a1c26] bg-[#090a0f]/40 flex items-center justify-between group relative">
           <div className="flex items-center gap-3">

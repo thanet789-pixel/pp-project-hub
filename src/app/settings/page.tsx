@@ -165,11 +165,11 @@ export default function SettingsPage() {
 
           {/* LINE INTEGRATION SETTINGS */}
           {activeSubTab === 'line' && (
-            <div className="p-6 rounded-2xl bg-[#12131a] border border-[#1f212d] space-y-6">
+            <div className="p-6 rounded-2xl bg-[#12131a] border border-[#1f212d] space-y-6 animate-fadeIn">
               
               <div>
-                <h3 className="text-sm font-bold text-white">LINE Messaging & Notify Setup</h3>
-                <p className="text-xs text-gray-400 mt-1">ตั้งค่าเพื่ออนุญาตให้ AI ตรวจจับข้อความรูปภาพจากลูกค้าเข้าสู่ไทม์ไลน์โดยอัตโนมัติ</p>
+                <h3 className="text-sm font-bold text-white">เชื่อมต่อ LINE Group & LINE Notify</h3>
+                <p className="text-xs text-gray-400 mt-1">ตั้งค่าเชื่อมต่อกลุ่ม LINE เพื่อส่งข้อความภาพความคืบหน้าหน้างาน รายการตรวจสอบ (Timeline) และรับรายงานความก้าวหน้าประจำวันโดยอัตโนมัติ</p>
               </div>
 
               {/* Status widget */}
