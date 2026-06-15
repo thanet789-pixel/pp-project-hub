@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -30,11 +30,25 @@ export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>(mockProjects);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   
-  // Modal form states
   const [newProjName, setNewProjName] = useState('');
   const [newProjDesc, setNewProjDesc] = useState('');
   const [newProjBudget, setNewProjBudget] = useState('');
   const [newProjAddress, setNewProjAddress] = useState('');
+
+  // Load from local storage
+  useEffect(() => {
+    const saved = localStorage.getItem('pp_projects');
+    if (saved) {
+      try {
+        setProjects(JSON.parse(saved));
+      } catch (e) {
+        setProjects(mockProjects);
+      }
+    } else {
+      setProjects(mockProjects);
+      localStorage.setItem('pp_projects', JSON.stringify(mockProjects));
+    }
+  }, []);
 
   // Status helper mapping
   const getStatusDetails = (status: ProjectStatus) => {
@@ -76,7 +90,9 @@ export default function Dashboard() {
       clientId: 'u7'
     };
 
-    setProjects([newProject, ...projects]);
+    const updated = [newProject, ...projects];
+    setProjects(updated);
+    localStorage.setItem('pp_projects', JSON.stringify(updated));
     setIsCreateModalOpen(false);
     // Reset fields
     setNewProjName('');
